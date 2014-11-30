@@ -14,7 +14,7 @@ The main entrypoint into the API is the `RedisConnection`, which represents a st
 
 ```
 conn = RedisConnection() # host=127.0.0.1, port=6379, db=0, no password
-\# conn = RedisConnection(host="192.168.0.1", port=6380, db=15, password="supersecure")
+# conn = RedisConnection(host="192.168.0.1", port=6380, db=15, password="supersecure")
 
 redis_set(conn, "foo", "bar")
 redis_get(conn, "foo") # Returns "bar"
@@ -32,7 +32,7 @@ The `disconnect` function can be used with any of the connection types detailed 
 
 ### Commands with options
 
-Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `redis_scan`). In these cases, the options should be passed as individual strings at the end of the function. For example:
+Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `redis_scan`). In these cases, the options should be passed as individual strings at the end of the function.
 
 ```
 redis_scan(conn, 0, "match", "foo*")
@@ -48,7 +48,7 @@ Redis.jl supports MULTI/EXEC transactions through two methods: using a `RedisCon
 
 ### Transactions using the RedisConnection
 
-If the user simply wants to build a transaction and execute it on the server, the simplest way to do so is to send the commands as you would at the Redis cli.
+If the user wants to build a transaction a single time and execute it on the server, the simplest way to do so is to send the commands as you would at the Redis cli.
 
 ```
 redis_multi(conn)
@@ -70,6 +70,7 @@ redis_set(trans, "foo", "bar")
 redis_get(trans, "foo") # Returns "QUEUED"
 redis_exec(trans) # Returns ["OK", "bar"]
 redis_get(trans, "foo") # Returns "QUEUED"
+redis_multi(trans) # Throws a ServerException
 ```
 
 Notice the subtle difference from the previous example; after calling `redis_exec`, the `TransactionConnection` is placed into another `MULTI` block rather than returning to a 'normal' state as the `RedisConnection` does.
@@ -106,7 +107,7 @@ x # Returns ["foobar"]
 redis_publish(conn, "bar", "anything") # "anything" written to stdout
 ```
 
-Pattern subscription works in the same way, through use of the `redis_psubscribe` function. Channels can be unsubscribed through `redis_unsubscribe` and `redis_punsubscribe`.
+Pattern subscription works in the same way through use of the `redis_psubscribe` function. Channels can be unsubscribed through `redis_unsubscribe` and `redis_punsubscribe`.
 
 Note that the async event loop currently runs until the `SubscriptionConnection` is disconnected, regardless of how many subscriptions the client has active. Event loop error handling should be improved in an update to the API.
 

@@ -195,13 +195,21 @@ end
 @redisfunction "time" Array
 
 # Sentinel commands
-@sentinelfunction "master" mastername
-@sentinelfunction "slaves" mastername
-@sentinelfunction "reset" pattern
-@sentinelfunction "failover" mastername
+@sentinelfunction "master" Dict mastername
+@sentinelfunction "reset" Integer pattern
+@sentinelfunction "failover" Any mastername
+@sentinelfunction "monitor" Bool name ip port quorum
+@sentinelfunction "remove" Bool name
+@sentinelfunction "set" Bool name option value
 
 function sentinel_masters(conn::SentinelConnection)
-    execute_redis_command(conn, flatten_command("sentinel", "masters"))
+    response = execute_redis_command(conn, flatten_command("sentinel", "masters"))
+    [convert_redis_response(Dict, master) for master in response]
+end
+
+function sentinel_slaves(conn::SentinelConnection, mastername)
+    response = execute_redis_command(conn, flatten_command("sentinel", "slaves", mastername))
+    [convert_redis_response(Dict, slave) for slave in response]
 end
 
 function sentinel_getmasteraddrbyname(conn::SentinelConnection, mastername)

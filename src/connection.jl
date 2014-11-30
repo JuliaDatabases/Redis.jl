@@ -47,7 +47,7 @@ function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0)
     end
 end
 
-function SentinelConnection(; host="127.0.0.1", port=6379, password="", db=0)
+function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0)
     try
         socket = connect(host, port)
         sentinel_connection = SentinelConnection(host, port, password, db, socket)

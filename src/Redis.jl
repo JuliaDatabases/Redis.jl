@@ -47,7 +47,7 @@ export redis_bgrewriteaof, redis_bgsave, redis_command, redis_dbsize, redis_flus
        redis_slaveof, redis_time
 # Sentinel commands
 export sentinel_masters, sentinel_master, sentinel_slaves, sentinel_getmasteraddrbyname,
-       sentinel_reset, sentinel_failover
+       sentinel_reset, sentinel_failover, sentinel_monitor, sentinel_remove, sentinel_set
 
 include("exceptions.jl")
 include("parser.jl")

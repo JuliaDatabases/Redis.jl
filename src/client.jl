@@ -8,7 +8,7 @@ flatten_command(command...) = vcat(map(flatten, command)...)
 
 convert_redis_response(::Any, response) = response
 convert_redis_response(::Type{Float64}, response) = float(response)::Float64
-convert_redis_response(::Type{Bool}, response::String) = response == "OK" ? true : false
+convert_redis_response(::Type{Bool}, response::String) = response == "OK" || response == "QUEUED" ? true : false
 convert_redis_response(::Type{Bool}, response::Integer) = convert(Bool, response)
 convert_redis_response(::Type{Set}, response) = Set(response)
 function convert_redis_response(::Type{Dict}, response)
@@ -83,11 +83,12 @@ macro redisfunction(command, ret_type, args...)
     end
 end
 
-macro sentinelfunction(command, arg)
+macro sentinelfunction(command, ret_type, args...)
     func_name = esc(symbol(string("sentinel_", command)))
     return quote
-        function $(func_name)(conn::SentinelConnection, $arg)
-            execute_redis_command(conn, flatten_command("sentinel", $command, $arg))
+        function $(func_name)(conn::SentinelConnection, $(args...))
+            response = execute_redis_command(conn, flatten_command("sentinel", $command, $(args...)))
+            convert_redis_response($ret_type, response)
         end
     end
 end

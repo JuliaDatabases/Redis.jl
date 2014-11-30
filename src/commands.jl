@@ -1,3 +1,5 @@
+const EXEC = ["exec"]
+
 baremodule Aggregate
     const NotSet = ""
     const Sum = "sum"
@@ -11,7 +13,7 @@ end
 @redisfunction "exists" Bool key
 @redisfunction "expire" Bool key seconds::Integer
 @redisfunction "expireat" Bool key timestamp::Integer
-@redisfunction "keys" Array pattern
+@redisfunction "keys" Set pattern
 @redisfunction "migrate" Bool host port key destinationdb timeout
 @redisfunction "move" Bool key db
 @redisfunction "persist" Bool key
@@ -239,7 +241,7 @@ function redis_unsubscribe(conn::SubscriptionConnection, channels...)
     for channel in channels
         delete!(conn.callbacks, channel)
     end
-    execute_redis_command(conn, vcat(["subscribe"], channels))
+    execute_redis_command(conn, unshift!(channels, "unsubscribe"))
 end
 
 function _redis_psubscribe(conn::SubscriptionConnection, patterns::Array)
@@ -262,12 +264,12 @@ function redis_punsubscribe(conn::SubscriptionConnection, patterns...)
     for pattern in patterns
         delete!(conn.pcallbacks, pattern)
     end
-    execute_redis_command(conn, vcat(["punsubscribe"], patterns))
+    execute_redis_command(conn, unshift!(patterns, "punsubscribe"))
 end
 
 # Need a specialized version of execute to keep the connection in the transaction state
 function redis_exec(conn::TransactionConnection)
-    response = execute_redis_command(conn, ["exec"])
+    response = execute_redis_command(conn, EXEC)
     redis_multi(conn)
     response
 end

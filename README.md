@@ -124,6 +124,8 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 
 ## Notes
 
+Actual API usage can be found in test/runtests.jl.
+
 For Server commands, currently the compound `CONFIG` commands have not yet been implemented. If there is a need for these commands, they can be added without much difficulty.
 
 Error handling at this point is very rudimentary; the main issue lies in the async subscription_loop, where error events are mostly ignored. Ideally, a callback should be raised to the client, allowing the user to define the action to be taken in the event of an error from the server.

@@ -31,13 +31,14 @@ function redis_reset_transaction(conn::TransactionConnection)
     redis_multi(conn)
 end
 
-function redis_open_subscription(conn::RedisConnection)
+nullcb(err) = nothing
+function redis_open_subscription(conn::RedisConnection, err_callback=nullcb)
     s = SubscriptionConnection(conn)
-    @async subscription_loop(s)
+    @async subscription_loop(s, err_callback)
     s
 end
 
-function subscription_loop(conn::SubscriptionConnection)
+function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
     while is_connected(conn)
         try
             # Probably could do something better here, but we can't block
@@ -53,7 +54,7 @@ function subscription_loop(conn::SubscriptionConnection)
                 conn.pcallbacks[message.channel](message.message)
             end
         catch err
-            show(err) # TODO: do something better here
+            err_callback(err)
         end
     end
 end

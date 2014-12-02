@@ -16,11 +16,14 @@ The main entrypoint into the API is the `RedisConnection`, which represents a st
 conn = RedisConnection() # host=127.0.0.1, port=6379, db=0, no password
 # conn = RedisConnection(host="192.168.0.1", port=6380, db=15, password="supersecure")
 
-redis_set(conn, "foo", "bar")
-redis_get(conn, "foo") # Returns "bar"
+set(conn, "foo", "bar")
+get(conn, "foo") # Returns "bar"
 ```
 
-For any Redis command `x`, the Julia function to call that command is `redis_x`. For those already familiar with available Redis commands, this convention should make the API relatively straightforward to understand.
+For any Redis command `x`, the Julia function to call that command is `x`. For those already familiar with available Redis commands, this convention should make the API relatively straightforward to understand. There are two exceptions to this convention due to conflicts with Julia:
+
+* The _type_ key command is `keytype`
+* The _eval_ scripting command is `evalscript`
 
 When the user is finished interacting with Redis, the connection should be destroyed to prevent resource leaks:
 
@@ -32,15 +35,15 @@ The `disconnect` function can be used with any of the connection types detailed 
 
 ### Commands with options
 
-Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `redis_scan`). In these cases, the options should be passed as individual strings at the end of the function.
+Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `scan`). In these cases, the options should be passed as individual strings at the end of the function.
 
 ```
-redis_scan(conn, 0, "match", "foo*")
+scan(conn, 0, "match", "foo*")
 ```
 
 If users are interested, the API could be improved to provide custom functions for these complex commands.
 
-An exception to this option syntax are the functions `redis_zinterstore` and `redis_zunionstore`, which have specific implementations to allow for ease of use due to their greater complexity.
+An exception to this option syntax are the functions `zinterstore` and `zunionstore`, which have specific implementations to allow for ease of use due to their greater complexity.
 
 ## Transactions
 
@@ -51,36 +54,36 @@ Redis.jl supports MULTI/EXEC transactions through two methods: using a `RedisCon
 If the user wants to build a transaction a single time and execute it on the server, the simplest way to do so is to send the commands as you would at the Redis cli.
 
 ```
-redis_multi(conn)
-redis_set(conn, "foo", "bar")
-redis_get(conn, "foo") # Returns "QUEUED"
-redis_exec(conn) # Returns ["OK", "bar"]
-redis_get(conn, "foo") # Returns "bar"
+multi(conn)
+set(conn, "foo", "bar")
+get(conn, "foo") # Returns "QUEUED"
+exec(conn) # Returns ["OK", "bar"]
+get(conn, "foo") # Returns "bar"
 ```
 
-It is important to note that after the final call to `redis_exec`, the RedisConnection is returned to a 'normal' state.
+It is important to note that after the final call to `exec`, the RedisConnection is returned to a 'normal' state.
 
 ### Transactions using the TransactionConnection
 
-If the user is planning on using multiple transactions on the same connection, it may make sense for the user to keep a separate connection for transactional use. The `TransactionConnection` is almost identical to the `RedisConnection`, except that it is always in a `MULTI` block. The user should never manually call `redis_multi` with a `TransactionConnection`.
+If the user is planning on using multiple transactions on the same connection, it may make sense for the user to keep a separate connection for transactional use. The `TransactionConnection` is almost identical to the `RedisConnection`, except that it is always in a `MULTI` block. The user should never manually call `multi` with a `TransactionConnection`.
 
 ```
-trans = redis_open_transaction(conn)
-redis_set(trans, "foo", "bar")
-redis_get(trans, "foo") # Returns "QUEUED"
-redis_exec(trans) # Returns ["OK", "bar"]
-redis_get(trans, "foo") # Returns "QUEUED"
-redis_multi(trans) # Throws a ServerException
+trans = open_transaction(conn)
+set(trans, "foo", "bar")
+get(trans, "foo") # Returns "QUEUED"
+exec(trans) # Returns ["OK", "bar"]
+get(trans, "foo") # Returns "QUEUED"
+multi(trans) # Throws a ServerException
 ```
 
-Notice the subtle difference from the previous example; after calling `redis_exec`, the `TransactionConnection` is placed into another `MULTI` block rather than returning to a 'normal' state as the `RedisConnection` does.
+Notice the subtle difference from the previous example; after calling `exec`, the `TransactionConnection` is placed into another `MULTI` block rather than returning to a 'normal' state as the `RedisConnection` does.
 
 ## Pub/sub
 
 Redis.jl provides full support for Redis pub/sub. Publishing is accomplished by using the command as normal:
 
 ```
-redis_publish(conn, "channel", "hello, world!")
+publish(conn, "channel", "hello, world!")
 ```
 
 Subscriptions are handled using the `SubscriptionConnection`. Similar to the `TransactionConnection`, the `SubscriptionConnection` is constructed from an existing `RedisConnection`. Once created, the `SubscriptionConnection` maintains a simple event loop that will call the user's defined function whenever a message is received on the specified channel.
@@ -88,9 +91,9 @@ Subscriptions are handled using the `SubscriptionConnection`. Similar to the `Tr
 ```
 x = Any[]
 f(y) = push!(x, y)
-sub = redis_open_subscription(conn)
-redis_subscribe(sub, "baz", f)
-redis_publish(conn, "baz", "foobar")
+sub = open_subscription(conn)
+subscribe(sub, "baz", f)
+publish(conn, "baz", "foobar")
 x # Returns ["foobar"]
 ```
 
@@ -99,15 +102,15 @@ Multiple channels can be subscribed together by providing a `Dict{String, Functi
 ```
 x = Any[]
 f(y) = push!(x, y)
-sub = redis_open_subscription(conn)
+sub = open_subscription(conn)
 d = Dict{String, Function}({"baz" => f, "bar" => println})
-redis_subscribe(sub, d)
-redis_publish(conn, "baz", "foobar")
+subscribe(sub, d)
+publish(conn, "baz", "foobar")
 x # Returns ["foobar"]
-redis_publish(conn, "bar", "anything") # "anything" written to stdout
+publish(conn, "bar", "anything") # "anything" written to stdout
 ```
 
-Pattern subscription works in the same way through use of the `redis_psubscribe` function. Channels can be unsubscribed through `redis_unsubscribe` and `redis_punsubscribe`.
+Pattern subscription works in the same way through use of the `psubscribe` function. Channels can be unsubscribed through `unsubscribe` and `punsubscribe`.
 
 Note that the async event loop currently runs until the `SubscriptionConnection` is disconnected, regardless of how many subscriptions the client has active. Event loop error handling should be improved in an update to the API.
 

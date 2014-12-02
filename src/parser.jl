@@ -5,7 +5,7 @@ immutable ParsedReply
     reply_length::Integer
 end
 
-function parse_redis_reply(reply)
+function parse_reply(reply)
     first_crlf = search(reply, CRLF)
     length(reply) >= 3   || throw(ProtocolException(reply))
     first_crlf.start > 0 || throw(ProtocolException(reply))
@@ -69,7 +69,7 @@ function parse_array_reply(reply, first_crlf)
         reply_length = first_crlf.stop
         response = Any[]
         for i=1:array_length
-            parsed_element = parse_redis_reply(reply)
+            parsed_element = parse_reply(reply)
             push!(response, parsed_element.response)
             reply_length += parsed_element.reply_length
             reply = reply[parsed_element.reply_length+1:end]

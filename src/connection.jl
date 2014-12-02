@@ -40,8 +40,8 @@ end
 function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0)
     try
         socket = connect(host, port)
-        redis_connection = RedisConnection(host, port, password, db, socket)
-        on_connect(redis_connection)
+        connection = RedisConnection(host, port, password, db, socket)
+        on_connect(connection)
     catch
         throw(ConnectionException("Failed to connect to Redis server"))
     end
@@ -81,8 +81,8 @@ function SubscriptionConnection(parent::SubscribableConnection)
 end
 
 function on_connect(conn::RedisConnectionBase)
-    conn.password != "" && redis_auth(conn, conn.password)
-    conn.db != 0        && redis_select(conn, conn.db)
+    conn.password != "" && auth(conn, conn.password)
+    conn.db != 0        && select(conn, conn.db)
     conn
 end
 
@@ -94,13 +94,13 @@ function is_connected(conn::RedisConnectionBase)
     conn.socket.status == StatusActive || conn.socket.status == StatusOpen
 end
 
-function send_redis_command(conn::RedisConnectionBase, command::String)
+function send_command(conn::RedisConnectionBase, command::String)
     write(conn.socket, command)
 end
 
-function execute_redis_command(conn::RedisConnectionBase, command)
+function execute_command(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
-    send_redis_command(conn, pack_command(command))
-    reply = parse_redis_reply(readavailable(conn.socket))
+    send_command(conn, pack_command(command))
+    reply = parse_reply(readavailable(conn.socket))
     reply.response
 end

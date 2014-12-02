@@ -16,20 +16,20 @@ function flatten_command_test()
     @test result == ["1", "2", "4", "5", "6.7", "8"]
 end
 
-function convert_redis_response_test()
-    @test convert_redis_response(Dict, ["1","2","3","4"]) == Dict({"1" => "2", "3" => "4"})
-    @test convert_redis_response(Dict, []) == Dict()
-    @test_approx_eq convert_redis_response(Float64, "12.3") 12.3
-    @test_approx_eq convert_redis_response(Float64, 10) 10.0
-    @test convert_redis_response(Bool, "OK")
-    @test !convert_redis_response(Bool, "f")
-    @test convert_redis_response(Bool, 1)
-    @test convert_redis_response(Bool, 4)
-    @test !convert_redis_response(Bool, 0)
-    @test convert_redis_response(Set, 1) == Set({1})
-    @test convert_redis_response(Set, [1,2,3]) == Set({1,2,3})
+function convert_response_test()
+    @test convert_response(Dict, ["1","2","3","4"]) == Dict({"1" => "2", "3" => "4"})
+    @test convert_response(Dict, []) == Dict()
+    @test_approx_eq convert_response(Float64, "12.3") 12.3
+    @test_approx_eq convert_response(Float64, 10) 10.0
+    @test convert_response(Bool, "OK")
+    @test !convert_response(Bool, "f")
+    @test convert_response(Bool, 1)
+    @test convert_response(Bool, 4)
+    @test !convert_response(Bool, 0)
+    @test convert_response(Set, 1) == Set({1})
+    @test convert_response(Set, [1,2,3]) == Set({1,2,3})
 end
 
 flatten_test()
 flatten_command_test()
-convert_redis_response_test()
+convert_response_test()

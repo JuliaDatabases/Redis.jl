@@ -27,7 +27,13 @@ end
 @redisfunction "scan" Array cursor::Integer options...
 @redisfunction "sort" Array key options...
 @redisfunction "ttl" Integer key
-@redisfunction "type" String key
+function keytype(conn::RedisConnection, key)
+    response = execute_command(conn, flatten_command("type", key))
+    convert_response(String, response)
+end
+function keytype(conn::TransactionConnection, key)
+    execute_command(conn, flatten_command("type", key))
+end
 
 # String commands
 @redisfunction "append" Integer key value
@@ -142,16 +148,16 @@ function _build_store_internal(destination, numkeys, keys, weights, aggregate, c
     vcat([command, destination, numkeys], keys, suffix)
 end
 
-function redis_zinterstore(conn::RedisConnectionBase, destination, numkeys::Integer,
+function zinterstore(conn::RedisConnectionBase, destination, numkeys::Integer,
     keys::Array, weights=[], aggregate=Aggregate.NotSet)
     command = _build_store_internal(destination, nunkeys, keys, weights, aggregate, "zinterstore")
-    execute_redis_command(conn, command)
+    execute_command(conn, command)
 end
 
-function redis_zunionstore(conn::RedisConnectionBase, destination, numkeys::Integer,
+function zunionstore(conn::RedisConnectionBase, destination, numkeys::Integer,
     keys::Array, weights=[], aggregate=Aggregate.NotSet)
     command = _build_store_internal(destination, nunkeys, keys, weights, aggregate, "zunionstore")
-    execute_redis_command(conn, command)
+    execute_command(conn, command)
 end
 
 # HyperLogLog commands
@@ -175,7 +181,13 @@ end
 
 # Scripting commands
 # TODO: compound commands
-@redisfunction "eval" Any script numkeys::Integer keys args
+function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
+    response = execute_command(conn, flatten_command("eval", script, numkeys, args))
+    convert_response(Any, response)
+end
+function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
+    execute_command(conn, flatten_command("eval", script, numkeys, args))
+end
 @redisfunction "evalsha" Any sha1 numkeys::Integer keys args
 
 # Server commands
@@ -205,71 +217,71 @@ end
 @sentinelfunction "set" Bool name option value
 
 function sentinel_masters(conn::SentinelConnection)
-    response = execute_redis_command(conn, flatten_command("sentinel", "masters"))
-    [convert_redis_response(Dict, master) for master in response]
+    response = execute_command(conn, flatten_command("sentinel", "masters"))
+    [convert_response(Dict, master) for master in response]
 end
 
 function sentinel_slaves(conn::SentinelConnection, mastername)
-    response = execute_redis_command(conn, flatten_command("sentinel", "slaves", mastername))
-    [convert_redis_response(Dict, slave) for slave in response]
+    response = execute_command(conn, flatten_command("sentinel", "slaves", mastername))
+    [convert_response(Dict, slave) for slave in response]
 end
 
 function sentinel_getmasteraddrbyname(conn::SentinelConnection, mastername)
-    execute_redis_command(conn, flatten_command("sentinel", "get-master-addr-by-name", mastername))
+    execute_command(conn, flatten_command("sentinel", "get-master-addr-by-name", mastername))
 end
 
 # Custom commands (PubSub/Transaction)
 @redisfunction "publish" Integer channel message
 
-function _redis_subscribe(conn::SubscriptionConnection, channels::Array)
-    execute_redis_command(conn, unshift!(channels, "subscribe"))
+function _subscribe(conn::SubscriptionConnection, channels::Array)
+    execute_command(conn, unshift!(channels, "subscribe"))
 end
 
-function redis_subscribe(conn::SubscriptionConnection, channel::String, callback::Function)
+function subscribe(conn::SubscriptionConnection, channel::String, callback::Function)
     conn.callbacks[channel] = callback
-    _redis_subscribe(conn, [channel])
+    _subscribe(conn, [channel])
 end
 
-function redis_subscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
+function subscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
     for (channel, callback) in subs
         conn.callbacks[channel] = callback
     end
-    _redis_subscribe(conn, collect(keys(subs)))
+    _subscribe(conn, collect(keys(subs)))
 end
 
-function redis_unsubscribe(conn::SubscriptionConnection, channels...)
+function unsubscribe(conn::SubscriptionConnection, channels...)
     for channel in channels
         delete!(conn.callbacks, channel)
     end
-    execute_redis_command(conn, unshift!(channels, "unsubscribe"))
+    execute_command(conn, unshift!(channels, "unsubscribe"))
 end
 
-function _redis_psubscribe(conn::SubscriptionConnection, patterns::Array)
-    execute_redis_command(conn, unshift!(patterns, "psubscribe"))
+function _psubscribe(conn::SubscriptionConnection, patterns::Array)
+    execute_command(conn, unshift!(patterns, "psubscribe"))
 end
 
-function redis_psubscribe(conn::SubscriptionConnection, pattern::String, callback::Function)
+function psubscribe(conn::SubscriptionConnection, pattern::String, callback::Function)
     conn.callbacks[pattern] = callback
-    _redis_psubscribe(conn, [pattern])
+    _psubscribe(conn, [pattern])
 end
 
-function redis_psubscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
+function psubscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
     for (pattern, callback) in subs
         conn.callbacks[pattern] = callback
     end
-    _redis_psubscribe(conn, collect(values(subs)))
+    _psubscribe(conn, collect(values(subs)))
 end
 
-function redis_punsubscribe(conn::SubscriptionConnection, patterns...)
+function punsubscribe(conn::SubscriptionConnection, patterns...)
     for pattern in patterns
         delete!(conn.pcallbacks, pattern)
     end
-    execute_redis_command(conn, unshift!(patterns, "punsubscribe"))
+    execute_command(conn, unshift!(patterns, "punsubscribe"))
 end
 
 # Need a specialized version of execute to keep the connection in the transaction state
-function redis_exec(conn::TransactionConnection)
-    response = execute_redis_command(conn, EXEC)
-    redis_multi(conn)
+function exec(conn::TransactionConnection)
+    response = execute_command(conn, EXEC)
+    multi(conn)
     response
 end

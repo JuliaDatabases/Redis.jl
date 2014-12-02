@@ -114,6 +114,10 @@ Pattern subscription works in the same way through use of the `psubscribe` funct
 
 Note that the async event loop currently runs until the `SubscriptionConnection` is disconnected, regardless of how many subscriptions the client has active. Event loop error handling should be improved in an update to the API.
 
+### Subscription error handling
+
+When a `SubscriptionConnection` instance is created via `open_subscription`, it spawns a routine that runs in the background to process events received from the server. In the case that Redis.jl encounters an error within this loops, the default behavior is to disregard the error and continue on. If the user would like finer control over this error handling, `open_subscription` accepts an optional `Function` parameter as its final argument. If this is provided, Redis.jl will call the provided function passing it the caught `Exception` as its only parameter.
+
 ## Sentinel
 
 Redis.jl also provides functionality for interacting with Redis Sentinel instances through the `SentinelConnection`. All Sentinel functionality other than `ping` is implemented through the `sentinel_` functions:
@@ -130,8 +134,6 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 Actual API usage can be found in test/runtests.jl.
 
 For Server commands, currently the compound `CONFIG` commands have not yet been implemented. If there is a need for these commands, they can be added without much difficulty.
-
-Error handling at this point is very rudimentary; the main issue lies in the async subscription_loop, where error events are mostly ignored. Ideally, a callback should be raised to the client, allowing the user to define the action to be taken in the event of an error from the server.
 
 
 [![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)

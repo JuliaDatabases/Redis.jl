@@ -1,3 +1,5 @@
+using Base.Test
+
 function flatten_test()
     @test flatten("simple") == "simple"
     @test flatten(1) == "1"

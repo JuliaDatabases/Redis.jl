@@ -38,13 +38,14 @@ export auth, echo, ping, quit, select
 # Transaction commands
 export discard, exec, multi, unwatch, watch
 # Scripting commands
-export evalscript, evalsha
+export evalscript, evalsha, script_exists, script_flush, script_kill, script_load
 # PubSub commands
 export subscribe, publish, psubscribe, punsubscribe, unsubscribe
 # Server commands
-export bgrewriteaof, bgsave, command, dbsize, flushall,
-       flushdb, info, lastsave, role, save, shutdown,
-       slaveof, time
+export bgrewriteaof, bgsave, client_list, client_pause, client_setname, cluster_slots,
+       command, command_count, command_info, config_get, config_resetstat, config_rewrite,
+       config_set, dbsize, debug_object, debug_segfault, flushall, flushdb, info, lastsave,
+       role, save, shutdown, slaveof, time
 # Sentinel commands
 export sentinel_masters, sentinel_master, sentinel_slaves, sentinel_getmasteraddrbyname,
        sentinel_reset, sentinel_failover, sentinel_monitor, sentinel_remove, sentinel_set

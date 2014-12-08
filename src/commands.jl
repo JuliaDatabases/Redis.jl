@@ -1,4 +1,3 @@
-const EXEC = ["exec"]
 
 baremodule Aggregate
     const NotSet = ""
@@ -180,7 +179,6 @@ end
 @redisfunction "watch" Bool key keys...
 
 # Scripting commands
-# TODO: compound commands
 function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
     response = execute_command(conn, flatten_command("eval", script, numkeys, args))
     convert_response(Any, response)
@@ -189,13 +187,29 @@ function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
     execute_command(conn, flatten_command("eval", script, numkeys, args))
 end
 @redisfunction "evalsha" Any sha1 numkeys::Integer keys args
+@redisfunction "script_exists" Array script scripts...
+@redisfunction "script_flush" String
+@redisfunction "script_kill" String
+@redisfunction "script_load" String script
 
 # Server commands
-# TODO: compound commands
 @redisfunction "bgrewriteaof" Bool
 @redisfunction "bgsave" String
+@redisfunction "client_getname" String
+@redisfunction "client_list" String
+@redisfunction "client_pause" Bool timeout::Integer
+@redisfunction "client_setname" Bool name
+@redisfunction "cluster_slots" Array
 @redisfunction "command" Array
+@redisfunction "command_count" Integer
+@redisfunction "command_info" Array command commands...
+@redisfunction "config_get" Array parameter
+@redisfunction "config_resetstat" Bool
+@redisfunction "config_rewrite" Bool
+@redisfunction "config_set" Bool parameter value
 @redisfunction "dbsize" Integer
+@redisfunction "debug_object" String key
+@redisfunction "debug_segfault" Any
 @redisfunction "flushall" String
 @redisfunction "flushdb" String
 @redisfunction "info" String

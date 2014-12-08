@@ -61,24 +61,25 @@ end
 
 macro redisfunction(command, ret_type, args...)
     func_name = esc(symbol(command))
+    command = split(command, '_')
     if length(args) > 0
         return quote
             function $(func_name)(conn::RedisConnection, $(args...))
-                response = execute_command(conn, flatten_command($command, $(args...)))
+                response = execute_command(conn, flatten_command($(command...), $(args...)))
                 convert_response($ret_type, response)
             end
             function $(func_name)(conn::TransactionConnection, $(args...))
-                execute_command(conn, flatten_command($command, $(args...)))
+                execute_command(conn, flatten_command($(command...), $(args...)))
             end
         end
     else
         return quote
             function $(func_name)(conn::RedisConnection)
-                response = execute_command(conn, flatten_command($command))
+                response = execute_command(conn, flatten_command($(command...)))
                 convert_response($ret_type, response)
             end
             function $(func_name)(conn::TransactionConnection)
-                execute_command(conn, flatten_command($command))
+                execute_command(conn, flatten_command($(command...)))
             end
         end
     end

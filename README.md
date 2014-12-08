@@ -20,7 +20,7 @@ set(conn, "foo", "bar")
 get(conn, "foo") # Returns "bar"
 ```
 
-For any Redis command `x`, the Julia function to call that command is `x`. For those already familiar with available Redis commands, this convention should make the API relatively straightforward to understand. There are two exceptions to this convention due to conflicts with Julia:
+For any Redis command `x`, the Julia function to call that command is `x`. Redis commands with spaces in them have their spaces replaced with underscores (`_`). For those already familiar with available Redis commands, this convention should make the API relatively straightforward to understand. There are two exceptions to this convention due to conflicts with Julia:
 
 * The _type_ key command is `keytype`
 * The _eval_ scripting command is `evalscript`
@@ -132,8 +132,6 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 ## Notes
 
 Actual API usage can be found in test/runtests.jl.
-
-For Server commands, currently the compound `CONFIG` commands have not yet been implemented. If there is a need for these commands, they can be added without much difficulty.
 
 
 [![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)

@@ -7,7 +7,7 @@ flatten(token::Dict) = map(string, vcat(map(collect, token)...))
 flatten_command(command...) = vcat(map(flatten, command)...)
 
 convert_response(::Any, response) = response
-convert_response(::Type{Float64}, response) = float(response)::Float64
+convert_response(::Type{Float64}, response) = response != nothing ? float(response)::Float64 : nothing
 convert_response(::Type{Bool}, response::String) = response == "OK" || response == "QUEUED" ? true : false
 convert_response(::Type{Bool}, response::Integer) = convert(Bool, response)
 convert_response(::Type{Set}, response) = Set(response)

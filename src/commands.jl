@@ -1,3 +1,4 @@
+const EXEC = ["exec"]
 
 baremodule Aggregate
     const NotSet = ""

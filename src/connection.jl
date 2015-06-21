@@ -97,10 +97,3 @@ end
 function send_command(conn::RedisConnectionBase, command::String)
     write(conn.socket, command)
 end
-
-function execute_command(conn::RedisConnectionBase, command)
-    is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
-    send_command(conn, pack_command(command))
-    reply = parse_reply(readavailable(conn.socket))
-    reply.response
-end

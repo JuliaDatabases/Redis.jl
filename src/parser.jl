@@ -1,82 +1,69 @@
-const CRLF = "\r\n"
-
-immutable ParsedReply
-    response # The type of the response is determined by the server (Int, String, Array)
-    reply_length::Integer
+function getline(s::TcpSocket)
+    l = chomp(readline(s))
+    length(l) > 1 || throw(ProtocolException("Invalid response received: $l"))
+    return l
 end
 
-function parse_reply(reply)
-    first_crlf = search(reply, CRLF)
-    length(reply) >= 3   || throw(ProtocolException(reply))
-    first_crlf.start > 0 || throw(ProtocolException(reply))
-    reply_type = reply[1]
-    if reply_type == '+'
-        parse_simple_string_reply(reply, first_crlf)
-    elseif reply_type == '-'
-        parse_error_reply(reply, first_crlf)
-    elseif reply_type == ':'
-        parse_integer_reply(reply, first_crlf)
-    elseif reply_type == '\$'
-        parse_bulk_reply(reply, first_crlf)
-    elseif reply_type == '*'
-        parse_array_reply(reply, first_crlf)
+function parse_simple_string(l::AbstractString)
+    return l
+end
+
+function parse_error(l::AbstractString)
+    throw(ServerException(l))
+end
+
+function parse_integer(l)
+    return parse(Int, l)
+end
+
+function parse_bulk_string(s::TcpSocket, len::Int)
+    b = readbytes(s, len+2) # add crlf
+    if length(b) != len + 2
+        throw(ProtocolException(
+            "Bulk string read error: expected $len bytes; received $(length(b))"
+        ))
     else
-        throw(ProtocolException(reply))
+        return join(@compat map(Char,b[1:end-2]))
     end
 end
 
-# Simple strings replys extend to the first encountered CRLF
-function parse_simple_string_reply(reply, first_crlf)
-    ParsedReply(reply[2:first_crlf.start-1], first_crlf.stop)
+function parse_integer(l::AbstractString)
+    return parse(Int, l)
 end
 
-# Errors are the same as simple strings, except that their first token specifies
-# the error type
-function parse_error_reply(reply, first_crlf)
-    first_space = search(reply, ' ')
-    first_space > 0 || throw(ProtocolException(reply))
-    throw(ServerException(reply[2:first_space-1], reply[first_space+1:first_crlf.start-1]))
-end
-
-# Integer replies are just ints followed by CRLF
-function parse_integer_reply(reply, first_crlf)
-    try
-        ParsedReply(parseint(reply[2:first_crlf.start-1]), first_crlf.stop)
-    catch
-        throw(ProtocolException(reply))
+function parse_array(s::TcpSocket, n::Int)
+    a = Any[]
+    for i = 1:n
+        l = getline(s)
+        r = parseline(l, s)
+        push!(a, r)
     end
+    return a
 end
 
-# Bulk replies specify their length and then the binary-safe string
-function parse_bulk_reply(reply, first_crlf)
-    try
-        bulk_length = parseint(reply[2:first_crlf.start-1])
-        bulk_length == -1 && return ParsedReply(nothing, first_crlf.stop)
-        reply_end = first_crlf.stop+bulk_length
-        ParsedReply(reply[first_crlf.stop+1:reply_end], reply_end+2)
-    catch
-        throw(ProtocolException(reply))
-    end
-end
-
-# Array replies specify the number of elements and then other reply types
-# for each item in length
-function parse_array_reply(reply, first_crlf)
-    try
-        array_length = parseint(reply[2:first_crlf.start-1])
-        array_length == -1 && return ParsedReply(nothing, first_crlf.stop)
-        reply = reply[first_crlf.stop+1:end]
-        reply_length = first_crlf.stop
-        response = Any[]
-        for i=1:array_length
-            parsed_element = parse_reply(reply)
-            push!(response, parsed_element.response)
-            reply_length += parsed_element.reply_length
-            reply = reply[parsed_element.reply_length+1:end]
+function parseline(l::AbstractString, s::TcpSocket)
+    reply_type = l[1]
+    reply_token = l[2:end]
+    if reply_type == '+'
+        parse_simple_string(reply_token)
+    elseif reply_type == '-'
+        parse_error(reply_token)
+    elseif reply_type == ':'
+        parse_integer(reply_token)
+    elseif reply_type == '$'
+        len = parse_integer(reply_token)
+        if len == -1
+            return nothing
+        else
+            parse_bulk_string(s, len)
         end
-        ParsedReply(response, reply_length)
-    catch
-        throw(ProtocolException(reply))
+    elseif reply_type == '*'
+        len = parse_integer(reply_token)
+        if len == -1
+            return nothing
+        else
+            parse_array(s, len)
+        end
     end
 end
 
@@ -88,6 +75,17 @@ function pack_command(command)
     end
     packed_command
 end
+
+
+
+function execute_command(conn::RedisConnectionBase, command)
+    is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
+    send_command(conn, pack_command(command))
+    l = getline(conn.socket)
+    parseline(l, conn.socket)
+end
+
+
 
 baremodule SubscriptionMessageType
     const Message = 0

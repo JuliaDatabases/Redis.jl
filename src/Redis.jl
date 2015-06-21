@@ -1,4 +1,7 @@
 module Redis
+using Compat
+
+import Base.get, Base.TcpSocket
 
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
 export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,
@@ -51,9 +54,9 @@ export sentinel_masters, sentinel_master, sentinel_slaves, sentinel_getmasteradd
        sentinel_reset, sentinel_failover, sentinel_monitor, sentinel_remove, sentinel_set
 
 include("exceptions.jl")
-include("parser.jl")
 include("connection.jl")
 include("client.jl")
+include("parser.jl")
 include("commands.jl")
 
 end

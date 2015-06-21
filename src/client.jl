@@ -62,6 +62,8 @@ end
 macro redisfunction(command, ret_type, args...)
     func_name = esc(symbol(command))
     command = split(command, '_')
+
+
     if length(args) > 0
         return quote
             function $(func_name)(conn::RedisConnection, $(args...))

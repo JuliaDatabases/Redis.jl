@@ -41,7 +41,7 @@ end
 # Integer replies are just ints followed by CRLF
 function parse_integer_reply(reply, first_crlf)
     try
-        ParsedReply(parseint(reply[2:first_crlf.start-1]), first_crlf.stop)
+        ParsedReply(parse(Int, reply[2:first_crlf.start-1]), first_crlf.stop)
     catch
         throw(ProtocolException(reply))
     end
@@ -50,7 +50,7 @@ end
 # Bulk replies specify their length and then the binary-safe string
 function parse_bulk_reply(reply, first_crlf)
     try
-        bulk_length = parseint(reply[2:first_crlf.start-1])
+        bulk_length = parse(Int, reply[2:first_crlf.start-1])
         bulk_length == -1 && return ParsedReply(nothing, first_crlf.stop)
         reply_end = first_crlf.stop+bulk_length
         ParsedReply(reply[first_crlf.stop+1:reply_end], reply_end+2)
@@ -63,7 +63,7 @@ end
 # for each item in length
 function parse_array_reply(reply, first_crlf)
     try
-        array_length = parseint(reply[2:first_crlf.start-1])
+        array_length = parse(Int, reply[2:first_crlf.start-1])
         array_length == -1 && return ParsedReply(nothing, first_crlf.stop)
         reply = reply[first_crlf.stop+1:end]
         reply_length = first_crlf.stop

@@ -1,5 +1,7 @@
 module Redis
 
+import Base.get
+
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
 export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,
        disconnect, is_connected, open_transaction, reset_transaction, open_subscription

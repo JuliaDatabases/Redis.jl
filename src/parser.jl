@@ -5,7 +5,7 @@ immutable ParsedReply
     reply_length::Integer
 end
 
-function parse_reply(reply)
+function parse_reply(reply::AbstractString)
     first_crlf = search(reply, CRLF)
     length(reply) >= 3   || throw(ProtocolException(reply))
     first_crlf.start > 0 || throw(ProtocolException(reply))
@@ -24,6 +24,8 @@ function parse_reply(reply)
         throw(ProtocolException(reply))
     end
 end
+
+parse_reply(reply::Vector{UInt8}) = parse_reply(join(map(Char,reply)))
 
 # Simple strings replys extend to the first encountered CRLF
 function parse_simple_string_reply(reply, first_crlf)

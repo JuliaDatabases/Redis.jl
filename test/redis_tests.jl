@@ -11,7 +11,7 @@ flushall(conn)
 @test set(conn, "testkey", "testvalue")
 @test get(conn, "testkey") == "testvalue"
 @test exists(conn, "testkey")
-@test keys(conn, "*") == Set({"testkey"})
+@test Redis.keys(conn, "*") == Set({"testkey"})
 @test del(conn, "testkey", "nothing", "noway") == 1
 @test get(conn, "testkey") == nothing
 

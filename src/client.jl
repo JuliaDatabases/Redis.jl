@@ -46,7 +46,8 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
             # socket will block until a message is received
             sleep(.1)
             nb_available(conn.socket) > 0 || continue
-            reply = parse_reply(readavailable(conn.socket))
+            l = getline(conn.socket)
+            reply = parseline(l, conn.socket)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message
                 conn.callbacks[message.channel](message.message)
@@ -62,6 +63,8 @@ end
 macro redisfunction(command, ret_type, args...)
     func_name = esc(symbol(command))
     command = split(command, '_')
+
+
     if length(args) > 0
         return quote
             function $(func_name)(conn::RedisConnection, $(args...))

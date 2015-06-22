@@ -221,7 +221,7 @@ end
 @redisfunction "shutdown" String
 @redisfunction "shutdown" String option
 @redisfunction "slaveof" String host port
-@redisfunction "time" Array
+@redisfunction "_time" Array
 
 # Sentinel commands
 @sentinelfunction "master" Dict mastername
@@ -300,3 +300,15 @@ function exec(conn::TransactionConnection)
     multi(conn)
     response
 end
+
+###############################################################
+# The following Redis commands can be typecast to Julia structs
+###############################################################
+
+function time(c::RedisConnection)
+    t = _time(c)
+    s = parse(Int,t[1])
+    ms = parse(Float64, t[2]) / 1e6
+    return Base.Dates.unix2datetime(s+ms)
+end
+

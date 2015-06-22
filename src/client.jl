@@ -61,6 +61,7 @@ end
 
 macro redisfunction(command, ret_type, args...)
     func_name = esc(symbol(command))
+    command = lstrip(command,'_')
     command = split(command, '_')
     if length(args) > 0
         return quote

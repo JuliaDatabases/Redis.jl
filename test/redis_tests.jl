@@ -11,7 +11,7 @@ flushall(conn)
 @test set(conn, "testkey", "testvalue")
 @test get(conn, "testkey") == "testvalue"
 @test exists(conn, "testkey")
-@test Redis.keys(conn, "*") == Set({"testkey"})
+@test keys(conn, "*") == Set(["testkey"])
 @test del(conn, "testkey", "nothing", "noway") == 1
 @test get(conn, "testkey") == nothing
 
@@ -22,15 +22,15 @@ flushall(conn)
 @test incrby(conn, "testkey", 3) == 6
 @test_approx_eq incrbyfloat(conn, "testkey", 1.5) 7.5
 @test set(conn, "testkey2", "something")
-@test Set(mget(conn, "testkey", "testkey2")) == Set({"7.5", "something"})
+@test Set(mget(conn, "testkey", "testkey2")) == Set(["7.5", "something"])
 @test strlen(conn, "testkey2") == 9
 
 ############### Simple use for Hash commands ###############
-@test hmset(conn, "testhash", Dict({1 => 2, "3" => 4, "5" => "6"}))
+@test hmset(conn, "testhash", Dict(1 => 2, "3" => 4, "5" => "6"))
 @test hget(conn, "testhash", 1) == "2"
-@test Set(hmget(conn, "testhash", 1, 3)) == Set({"2", "4"})
-@test hgetall(conn, "testhash") == Dict({"1" => "2", "3" => "4", "5" => "6"})
-@test Set(hvals(conn, "testhash")) == Set({"2", "4", "6"})
+@test Set(hmget(conn, "testhash", 1, 3)) == Set(["2", "4"])
+@test hgetall(conn, "testhash") == Dict("1" => "2", "3" => "4", "5" => "6")
+@test Set(hvals(conn, "testhash")) == Set(["2", "4", "6"])
 
 ############### Transactions ###############
 trans = open_transaction(conn)

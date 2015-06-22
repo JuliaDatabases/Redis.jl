@@ -82,7 +82,8 @@ function execute_command(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
     send_command(conn, pack_command(command))
     l = getline(conn.socket)
-    parseline(l, conn.socket)
+    reply = parseline(l, conn.socket)
+    return reply
 end
 
 
@@ -98,8 +99,8 @@ immutable SubscriptionMessage
     channel::String
     message::String
 
-    function SubscriptionMessage(reply)
-        notification = reply.response
+    function SubscriptionMessage(reply::AbstractArray)
+        notification = reply
         message_type = notification[1]
         if message_type == "message"
             new(SubscriptionMessageType.Message, notification[2], notification[3])

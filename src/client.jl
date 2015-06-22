@@ -47,7 +47,7 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
             sleep(.1)
             nb_available(conn.socket) > 0 || continue
             l = getline(conn.socket)
-            reply = parseline(l)
+            reply = parseline(l, conn.socket)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message
                 conn.callbacks[message.channel](message.message)

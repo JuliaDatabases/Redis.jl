@@ -1,7 +1,7 @@
 module Redis
 using Compat
 
-import Base.get, Base.TcpSocket
+import Base.get, Base.TcpSocket, Base.keys
 
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
 export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,

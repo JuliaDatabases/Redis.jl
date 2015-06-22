@@ -1,7 +1,13 @@
 module Redis
 using Compat
 
-import Base.get, Base.TcpSocket, Base.keys
+if VERSION < v"0.4.0-dev" # until < 0.4 deprecated
+    using Dates
+else
+    using Base.Dates
+end
+
+import Base.get, Base.TcpSocket, Base.keys, Base.time
 
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
 export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,

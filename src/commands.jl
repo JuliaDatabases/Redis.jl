@@ -310,6 +310,6 @@ function time(c::RedisConnection)
     s = parse(Int,t[1])
     ms = parse(Float64, t[2])
     s += (ms / 1e6)
-    return Base.Dates.unix2datetime(s)
+    return unix2datetime(s)
 end
 

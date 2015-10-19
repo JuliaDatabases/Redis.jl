@@ -1,4 +1,4 @@
-function getline(s::TcpSocket)
+function getline(s::TCPSocket)
     l = chomp(readline(s))
     length(l) > 1 || throw(ProtocolException("Invalid response received: $l"))
     return l
@@ -16,7 +16,7 @@ function parse_integer(l)
     return parse(Int, l)
 end
 
-function parse_bulk_string(s::TcpSocket, len::Int)
+function parse_bulk_string(s::TCPSocket, len::Int)
     b = readbytes(s, len+2) # add crlf
     if length(b) != len + 2
         throw(ProtocolException(
@@ -31,7 +31,7 @@ function parse_integer(l::AbstractString)
     return parse(Int, l)
 end
 
-function parse_array(s::TcpSocket, n::Int)
+function parse_array(s::TCPSocket, n::Int)
     a = Any[]
     for i = 1:n
         l = getline(s)
@@ -41,7 +41,7 @@ function parse_array(s::TcpSocket, n::Int)
     return a
 end
 
-function parseline(l::AbstractString, s::TcpSocket)
+function parseline(l::AbstractString, s::TCPSocket)
     reply_type = l[1]
     reply_token = l[2:end]
     if reply_type == '+'
@@ -96,8 +96,8 @@ end
 
 immutable SubscriptionMessage
     message_type
-    channel::String
-    message::String
+    channel::AbstractString
+    message::AbstractString
 
     function SubscriptionMessage(reply::AbstractArray)
         notification = reply

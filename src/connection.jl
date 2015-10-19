@@ -1,40 +1,40 @@
-import Base.connect, Base.TcpSocket, Base.StatusActive, Base.StatusOpen
+import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen
 
 abstract RedisConnectionBase
 abstract SubscribableConnection <: RedisConnectionBase
 
 immutable RedisConnection <: SubscribableConnection
-    host::String
+    host::AbstractString
     port::Integer
-    password::String
+    password::AbstractString
     db::Integer
-    socket::TcpSocket
+    socket::TCPSocket
 end
 
 immutable SentinelConnection <: SubscribableConnection
-    host::String
+    host::AbstractString
     port::Integer
-    password::String
+    password::AbstractString
     db::Integer
-    socket::TcpSocket
+    socket::TCPSocket
 end
 
 immutable TransactionConnection <: RedisConnectionBase
-    host::String
+    host::AbstractString
     port::Integer
-    password::String
+    password::AbstractString
     db::Integer
-    socket::TcpSocket
+    socket::TCPSocket
 end
 
 immutable SubscriptionConnection <: RedisConnectionBase
-    host::String
+    host::AbstractString
     port::Integer
-    password::String
+    password::AbstractString
     db::Integer
-    callbacks::Dict{String, Function}
-    pcallbacks::Dict{String, Function}
-    socket::TcpSocket
+    callbacks::Dict{AbstractString, Function}
+    pcallbacks::Dict{AbstractString, Function}
+    socket::TCPSocket
 end
 
 function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0)
@@ -72,8 +72,8 @@ function SubscriptionConnection(parent::SubscribableConnection)
     try
         socket = connect(parent.host, parent.port)
         subscription_connection = SubscriptionConnection(parent.host,
-            parent.port, parent.password, parent.db, Dict{String, Function}(),
-            Dict{String, Function}(), socket)
+            parent.port, parent.password, parent.db, Dict{AbstractString, Function}(),
+            Dict{AbstractString, Function}(), socket)
         on_connect(subscription_connection)
     catch
         throw(ConnectionException("Failed to create subscription"))
@@ -94,6 +94,6 @@ function is_connected(conn::RedisConnectionBase)
     conn.socket.status == StatusActive || conn.socket.status == StatusOpen
 end
 
-function send_command(conn::RedisConnectionBase, command::String)
+function send_command(conn::RedisConnectionBase, command::AbstractString)
     write(conn.socket, command)
 end

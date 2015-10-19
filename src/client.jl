@@ -1,5 +1,5 @@
 flatten(token) = string(token)
-flatten(token::String) = token
+flatten(token::AbstractString) = token
 flatten(token::Array) = map(string, token)
 flatten(token::Set) = map(string, collect(token))
 flatten(token::Dict) = map(string, vcat(map(collect, token)...))
@@ -8,12 +8,12 @@ flatten_command(command...) = vcat(map(flatten, command)...)
 
 convert_response(::Any, response) = response
 convert_response(::Type{Float64}, response) = float(response)::Float64
-convert_response(::Type{Bool}, response::String) = response == "OK" || response == "QUEUED" ? true : false
+convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
 convert_response(::Type{Bool}, response::Integer) = convert(Bool, response)
 convert_response(::Type{Set}, response) = Set(response)
 function convert_response(::Type{Dict}, response)
     iseven(length(response)) || throw(ClientException("Response could not be converted to Dict"))
-    retdict = Dict{String, String}()
+    retdict = Dict{AbstractString, AbstractString}()
     for i=1:2:length(response)
         retdict[response[i]] = response[i+1]
     end

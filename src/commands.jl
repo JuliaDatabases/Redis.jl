@@ -9,7 +9,7 @@ end
 
 # Key commands
 @redisfunction "del" Integer key...
-@redisfunction "dump" String key
+@redisfunction "dump" AbstractString key
 @redisfunction "exists" Bool key
 @redisfunction "expire" Bool key seconds::Integer
 @redisfunction "expireat" Bool key timestamp::Integer
@@ -20,8 +20,8 @@ end
 @redisfunction "pexpire" Bool key milliseconds::Integer
 @redisfunction "pexpireat" Bool key millisecondstimestamp::Integer
 @redisfunction "pttl" Integer key
-@redisfunction "randomkey" String
-@redisfunction "rename" String key newkey
+@redisfunction "randomkey" AbstractString
+@redisfunction "rename" AbstractString key newkey
 @redisfunction "renamenx" Bool key newkey
 @redisfunction "restore" Bool key ttl::Integer serializedvalue
 @redisfunction "scan" Array cursor::Integer options...
@@ -29,7 +29,7 @@ end
 @redisfunction "ttl" Integer key
 function keytype(conn::RedisConnection, key)
     response = execute_command(conn, flatten_command("type", key))
-    convert_response(String, response)
+    convert_response(AbstractString, response)
 end
 function keytype(conn::TransactionConnection, key)
     execute_command(conn, flatten_command("type", key))
@@ -42,20 +42,20 @@ end
 @redisfunction "bitpos" Integer key bit options...
 @redisfunction "decr" Integer key
 @redisfunction "decrby" Integer key decrement::Integer
-@redisfunction "get" String key
+@redisfunction "get" AbstractString key
 @redisfunction "getbit" Integer key offset::Integer
-@redisfunction "getrange" String key start::Integer finish::Integer
-@redisfunction "getset" String key value
+@redisfunction "getrange" AbstractString key start::Integer finish::Integer
+@redisfunction "getset" AbstractString key value
 @redisfunction "incr" Integer key
 @redisfunction "incrby" Integer key increment::Integer
 @redisfunction "incrbyfloat" Float64 key increment::Float64
 @redisfunction "mget" Array key keys...
 @redisfunction "mset" Bool keyvalues::Dict{Any, Any}
 @redisfunction "msetnx" Bool keyvalues::Dict{Any, Any}
-@redisfunction "psetex" String key milliseconds::Integer value
+@redisfunction "psetex" AbstractString key milliseconds::Integer value
 @redisfunction "set" Bool key value options...
 @redisfunction "setbit" Integer key offset::Integer value
-@redisfunction "setex" String key seconds::Integer value
+@redisfunction "setex" AbstractString key seconds::Integer value
 @redisfunction "setnx" Bool key value
 @redisfunction "setrange" Integer key offset::Integer value
 @redisfunction "strlen" Integer key
@@ -63,7 +63,7 @@ end
 # Hash commands
 @redisfunction "hdel" Integer key field fields...
 @redisfunction "hexists" Bool key field
-@redisfunction "hget" String key field
+@redisfunction "hget" AbstractString key field
 @redisfunction "hgetall" Dict key
 @redisfunction "hincrby" Integer key field increment::Integer
 @redisfunction "hincrbyfloat" Float64 key field increment::Float64
@@ -77,21 +77,21 @@ end
 @redisfunction "hscan" Array key cursor::Integer options...
 
 # List commands
-@redisfunction "blpop" String keys timeout::Integer
-@redisfunction "brpop" String keys timeout::Integer
-@redisfunction "brpoplpush" String source destination timeout::Integer
-@redisfunction "lindex" String key index::Integer
+@redisfunction "blpop" AbstractString keys timeout::Integer
+@redisfunction "brpop" AbstractString keys timeout::Integer
+@redisfunction "brpoplpush" AbstractString source destination timeout::Integer
+@redisfunction "lindex" AbstractString key index::Integer
 @redisfunction "linsert" Integer key place pivot value
 @redisfunction "llen" Integer key
-@redisfunction "lpop" String key
+@redisfunction "lpop" AbstractString key
 @redisfunction "lpush" Integer key value values...
 @redisfunction "lpushx" Integer key value
 @redisfunction "lrange" Array key start::Integer finish::Integer
 @redisfunction "lrem" Integer key count::Integer value
-@redisfunction "lset" String key index::Integer value
-@redisfunction "ltrim" String key start::Integer finish::Integer
-@redisfunction "rpop" String key
-@redisfunction "rpoplpush" String source destination
+@redisfunction "lset" AbstractString key index::Integer value
+@redisfunction "ltrim" AbstractString key start::Integer finish::Integer
+@redisfunction "rpop" AbstractString key
+@redisfunction "rpoplpush" AbstractString source destination
 @redisfunction "rpush" integer key value values...
 @redisfunction "rpushx" Integer key value
 
@@ -105,8 +105,8 @@ end
 @redisfunction "sismember" Bool key member
 @redisfunction "smembers" Set key
 @redisfunction "smove" Bool source destination member
-@redisfunction "spop" String key
-@redisfunction "srandmember" String key
+@redisfunction "spop" AbstractString key
+@redisfunction "srandmember" AbstractString key
 @redisfunction "srandmember" Set key count::Integer
 @redisfunction "srem" Integer key member members...
 @redisfunction "sunion" Set key keys...
@@ -118,7 +118,7 @@ end
 @redisfunction "zadd" Integer key scores::Dict{Number, Any}
 @redisfunction "zcard" Integer key
 @redisfunction "zcount" Integer key min::Number max::Number
-@redisfunction "zincrby" String key increment::Number member
+@redisfunction "zincrby" AbstractString key increment::Number member
 @redisfunction "zlexcount" Integer key min max
 @redisfunction "zrange" Set key start::Integer finish::Integer options...
 @redisfunction "zrangebylex" Set key min max options...
@@ -166,11 +166,11 @@ end
 @redisfunction "pfmerge" Bool destkey sourcekey sourcekeys...
 
 # Connection commands
-@redisfunction "auth" String password
-@redisfunction "echo" String message
-@redisfunction "ping" String
+@redisfunction "auth" AbstractString password
+@redisfunction "echo" AbstractString message
+@redisfunction "ping" AbstractString
 @redisfunction "quit" Bool
-@redisfunction "select" String index::Integer
+@redisfunction "select" AbstractString index::Integer
 
 # Transaction commands
 @redisfunction "discard" Bool
@@ -189,15 +189,15 @@ function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
 end
 @redisfunction "evalsha" Any sha1 numkeys::Integer keys args
 @redisfunction "script_exists" Array script scripts...
-@redisfunction "script_flush" String
-@redisfunction "script_kill" String
-@redisfunction "script_load" String script
+@redisfunction "script_flush" AbstractString
+@redisfunction "script_kill" AbstractString
+@redisfunction "script_load" AbstractString script
 
 # Server commands
 @redisfunction "bgrewriteaof" Bool
-@redisfunction "bgsave" String
-@redisfunction "client_getname" String
-@redisfunction "client_list" String
+@redisfunction "bgsave" AbstractString
+@redisfunction "client_getname" AbstractString
+@redisfunction "client_list" AbstractString
 @redisfunction "client_pause" Bool timeout::Integer
 @redisfunction "client_setname" Bool name
 @redisfunction "cluster_slots" Array
@@ -209,18 +209,18 @@ end
 @redisfunction "config_rewrite" Bool
 @redisfunction "config_set" Bool parameter value
 @redisfunction "dbsize" Integer
-@redisfunction "debug_object" String key
+@redisfunction "debug_object" AbstractString key
 @redisfunction "debug_segfault" Any
-@redisfunction "flushall" String
-@redisfunction "flushdb" String
-@redisfunction "info" String
-@redisfunction "info" String section
+@redisfunction "flushall" AbstractString
+@redisfunction "flushdb" AbstractString
+@redisfunction "info" AbstractString
+@redisfunction "info" AbstractString section
 @redisfunction "lastsave" Integer
 @redisfunction "role" Array
 @redisfunction "save" Bool
-@redisfunction "shutdown" String
-@redisfunction "shutdown" String option
-@redisfunction "slaveof" String host port
+@redisfunction "shutdown" AbstractString
+@redisfunction "shutdown" AbstractString option
+@redisfunction "slaveof" AbstractString host port
 @redisfunction "_time" Array
 
 # Sentinel commands
@@ -252,12 +252,12 @@ function _subscribe(conn::SubscriptionConnection, channels::Array)
     execute_command(conn, unshift!(channels, "subscribe"))
 end
 
-function subscribe(conn::SubscriptionConnection, channel::String, callback::Function)
+function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
     conn.callbacks[channel] = callback
     _subscribe(conn, [channel])
 end
 
-function subscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
+function subscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
     for (channel, callback) in subs
         conn.callbacks[channel] = callback
     end
@@ -275,12 +275,12 @@ function _psubscribe(conn::SubscriptionConnection, patterns::Array)
     execute_command(conn, unshift!(patterns, "psubscribe"))
 end
 
-function psubscribe(conn::SubscriptionConnection, pattern::String, callback::Function)
+function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
     conn.callbacks[pattern] = callback
     _psubscribe(conn, [pattern])
 end
 
-function psubscribe(conn::SubscriptionConnection, subs::Dict{String, Function})
+function psubscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
     for (pattern, callback) in subs
         conn.callbacks[pattern] = callback
     end
@@ -312,4 +312,3 @@ function time(c::RedisConnection)
     s += (ms / 1e6)
     return unix2datetime(s)
 end
-

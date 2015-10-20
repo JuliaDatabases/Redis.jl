@@ -40,12 +40,13 @@ trans = open_transaction(conn)
 disconnect(trans)
 
 ############### Pub/sub ###############
-subs = open_subscription(conn)
+g(y) = print(y)
+subs = open_subscription(conn, g)
 x = Any[]
 f(y) = push!(x, y)
 subscribe(subs, "channel", f)
 @test publish(conn, "channel", "hello, world!") == 1
-sleep(1)
+sleep(2)
 @test x == ["hello, world!"]
 disconnect(subs)
 

@@ -48,7 +48,7 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
             # forever or else subsequent subscribe commands on the same
             # socket will block until a message is received
             sleep(.1)
-            nb_available(conn.socket) > 0 || continue
+            isreadable(conn.socket) || continue
             l = getline(conn.socket)
             reply = parseline(l, conn.socket)
             message = SubscriptionMessage(reply)

@@ -20,6 +20,13 @@ set(conn, "foo", "bar")
 get(conn, "foo") # Returns "bar"
 ```
 
+Anywhere that `String` would normally be accepted, keywords can be passed as well. In fact, any Type can be passed so long as the type has a method for the `string` function.
+
+```
+set(conn, :keyword, :value)
+get(conn, :keyword) # Returns "value"
+```
+
 For any Redis command `x`, the Julia function to call that command is `x`. Redis commands with spaces in them have their spaces replaced with underscores (`_`). For those already familiar with available Redis commands, this convention should make the API relatively straightforward to understand. There are two exceptions to this convention due to conflicts with Julia:
 
 * The _type_ key command is `keytype`
@@ -35,10 +42,11 @@ The `disconnect` function can be used with any of the connection types detailed 
 
 ### Commands with options
 
-Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `scan`). In these cases, the options should be passed as individual strings at the end of the function.
+Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `scan`). In these cases, the options should be passed as individual strings at the end of the function. As mentioned earlier, keywords or other Types can be passed for these options as well and will be coerced to `String`.
 
 ```
 scan(conn, 0, "match", "foo*")
+scan(conn, 2, :count, 2)
 ```
 
 If users are interested, the API could be improved to provide custom functions for these complex commands.
@@ -116,7 +124,7 @@ Note that the async event loop currently runs until the `SubscriptionConnection`
 
 ### Subscription error handling
 
-When a `SubscriptionConnection` instance is created via `open_subscription`, it spawns a routine that runs in the background to process events received from the server. In the case that Redis.jl encounters an error within this loops, the default behavior is to disregard the error and continue on. If the user would like finer control over this error handling, `open_subscription` accepts an optional `Function` parameter as its final argument. If this is provided, Redis.jl will call the provided function passing it the caught `Exception` as its only parameter.
+When a `SubscriptionConnection` instance is created via `open_subscription`, it spawns a routine that runs in the background to process events received from the server. In the case that Redis.jl encounters an error within this loop, the default behavior is to disregard the error and continue on. If the user would like finer control over this error handling, `open_subscription` accepts an optional `Function` parameter as its final argument. If this is provided, Redis.jl will call the provided function passing it the caught `Exception` as its only parameter.
 
 ## Sentinel
 
@@ -131,7 +139,7 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 
 ## Notes
 
-Actual API usage can be found in test/runtests.jl.
+Actual API usage can be found in test/redis_tests.jl.
 
 
 [![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)

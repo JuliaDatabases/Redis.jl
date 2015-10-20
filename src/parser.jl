@@ -23,7 +23,7 @@ function parse_bulk_string(s::TCPSocket, len::Int)
             "Bulk string read error: expected $len bytes; received $(length(b))"
         ))
     else
-        return join(@compat map(Char,b[1:end-2]))
+        return join(map(Char,b[1:end-2]))
     end
 end
 

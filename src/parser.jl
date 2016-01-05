@@ -76,17 +76,17 @@ function pack_command(command)
     packed_command
 end
 
-
-
-function execute_command(conn::RedisConnectionBase, command)
+function execute_command_without_reply(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
     send_command(conn, pack_command(command))
+end
+
+function execute_command(conn::RedisConnectionBase, command)
+    execute_command_without_reply(conn, command)
     l = getline(conn.socket)
     reply = parseline(l, conn.socket)
     return reply
 end
-
-
 
 baremodule SubscriptionMessageType
     const Message = 0

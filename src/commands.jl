@@ -251,7 +251,7 @@ end
 @redisfunction "publish" Integer channel message
 
 function _subscribe(conn::SubscriptionConnection, channels::Array)
-    execute_command(conn, unshift!(channels, "subscribe"))
+    execute_command_without_reply(conn, unshift!(channels, "subscribe"))
 end
 
 function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
@@ -274,7 +274,7 @@ function unsubscribe(conn::SubscriptionConnection, channels...)
 end
 
 function _psubscribe(conn::SubscriptionConnection, patterns::Array)
-    execute_command(conn, unshift!(patterns, "psubscribe"))
+    execute_command_without_reply(conn, unshift!(patterns, "psubscribe"))
 end
 
 function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)

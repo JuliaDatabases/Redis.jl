@@ -27,6 +27,15 @@ immutable TransactionConnection <: RedisConnectionBase
     socket::TCPSocket
 end
 
+type PipelineConnection <: RedisConnectionBase
+    host::AbstractString
+    port::Integer
+    password::AbstractString
+    db::Integer
+    socket::TCPSocket
+    num_commands::Integer
+end
+
 immutable SubscriptionConnection <: RedisConnectionBase
     host::AbstractString
     port::Integer
@@ -65,6 +74,17 @@ function TransactionConnection(parent::RedisConnection)
         on_connect(transaction_connection)
     catch
         throw(ConnectionException("Failed to create transaction"))
+    end
+end
+
+function PipelineConnection(parent::RedisConnection)
+    try
+        socket = connect(parent.host, parent.port)
+        pipeline_connection = PipelineConnection(parent.host,
+            parent.port, parent.password, parent.db, socket, 0)
+        on_connect(pipeline_connection)
+    catch
+        throw(ConnectionException("Failed to create pipeline"))
     end
 end
 

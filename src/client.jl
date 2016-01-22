@@ -34,6 +34,19 @@ function reset_transaction(conn::TransactionConnection)
     multi(conn)
 end
 
+function open_pipeline(conn::RedisConnection)
+    PipelineConnection(conn)
+end
+
+function read_pipeline(conn::PipelineConnection)
+    result = Any[]
+    for i=1:conn.num_commands
+        push!(result, read_reply(conn))
+    end
+    conn.num_commands = 0
+    result
+end
+
 nullcb(err) = nothing
 function open_subscription(conn::RedisConnection, err_callback=nullcb)
     s = SubscriptionConnection(conn)
@@ -73,6 +86,10 @@ macro redisfunction(command, ret_type, args...)
             function $(func_name)(conn::TransactionConnection, $(args...))
                 execute_command(conn, flatten_command($(command...), $(args...)))
             end
+            function $(func_name)(conn::PipelineConnection, $(args...))
+                execute_command_without_reply(conn, flatten_command($(command...), $(args...)))
+                conn.num_commands += 1
+            end
         end
     else
         return quote
@@ -82,6 +99,10 @@ macro redisfunction(command, ret_type, args...)
             end
             function $(func_name)(conn::TransactionConnection)
                 execute_command(conn, flatten_command($(command...)))
+            end
+            function $(func_name)(conn::PipelineConnection)
+                execute_command_without_reply(conn, flatten_command($(command...)))
+                conn.num_commands += 1
             end
         end
     end

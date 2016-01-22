@@ -39,6 +39,17 @@ trans = open_transaction(conn)
 @test exec(trans) == ["OK", "foobar"]
 disconnect(trans)
 
+############## Pipelining #############
+pipe = open_pipeline(conn)
+set(pipe, "pipeline", "anything")
+@test length(read_pipeline(pipe)) == 1
+get(pipe, "pipeline")
+set(pipe, "another", "testing")
+result = read_pipeline(pipe)
+@test length(result) == 2
+@test result == ["anything", "OK"]
+disconnect(pipe)
+
 ############### Pub/sub ###############
 g(y) = print(y)
 subs = open_subscription(conn, g)

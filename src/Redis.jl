@@ -5,7 +5,8 @@ import Base.get, Base.keys, Base.time
 
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
 export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,
-       disconnect, is_connected, open_transaction, reset_transaction, open_subscription
+disconnect, is_connected, open_transaction, reset_transaction, open_subscription,
+open_pipeline, read_pipeline
 # Key commands
 export del, dump, exists, expire, expireat, keys,
        migrate, move, persist, pexpire, pexpireat,

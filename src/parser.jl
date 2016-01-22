@@ -81,11 +81,15 @@ function execute_command_without_reply(conn::RedisConnectionBase, command)
     send_command(conn, pack_command(command))
 end
 
-function execute_command(conn::RedisConnectionBase, command)
-    execute_command_without_reply(conn, command)
+function read_reply(conn::RedisConnectionBase)
     l = getline(conn.socket)
     reply = parseline(l, conn.socket)
     return reply
+end
+
+function execute_command(conn::RedisConnectionBase, command)
+    execute_command_without_reply(conn, command)
+    read_reply(conn)
 end
 
 baremodule SubscriptionMessageType

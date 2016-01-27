@@ -53,6 +53,23 @@ If users are interested, the API could be improved to provide custom functions f
 
 An exception to this option syntax are the functions `zinterstore` and `zunionstore`, which have specific implementations to allow for ease of use due to their greater complexity.
 
+## Pipelining
+
+Redis.jl supports pipelining through the `PipelineConnection`. Commands are executed in much the same way as standard Redis commands:
+
+```
+pipeline = open_pipeline(conn)
+set(pipeline, "somekey", "somevalue")
+```
+
+Commands will be sent directly to the Redis server without waiting for a response. Responses can be read at any time in the future using the `read_pipeline` command:
+
+```
+responses = read_pipeline(pipeline) # responses == ["OK"]
+```
+
+*Important:* The current `PipelineConnection` implementation is *not* threadsafe. If multiple threads require access to Redis pipelines, a separate `PipelineConnection` should be created for each thread. This limitation could be addressed in a future commit if there is a need.
+
 ## Transactions
 
 Redis.jl supports MULTI/EXEC transactions through two methods: using a `RedisConnection` directly or using a specialized `TransactionConnection` derived from a parent connection.

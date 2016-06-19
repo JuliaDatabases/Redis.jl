@@ -4,7 +4,7 @@ flatten(token) = string(token)
 flatten(token::AbstractString) = token
 flatten(token::Array) = map(string, token)
 flatten(token::Set) = map(string, collect(token))
-# the following doesn't work in JUlia v0.5
+# the following doesn't work in Julia v0.5
 # flatten(token::Dict) = map(string, vcat(map(collect, token)...))
 function flatten(token::Dict)
     r=AbstractString[]

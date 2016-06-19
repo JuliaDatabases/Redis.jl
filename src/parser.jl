@@ -17,7 +17,7 @@ function parse_integer(l)
 end
 
 function parse_bulk_string(s::TCPSocket, len::Int)
-    b = readbytes(s, len+2) # add crlf
+    b = read(s, UInt8, len+2) # add crlf
     if length(b) != len + 2
         throw(ProtocolException(
             "Bulk string read error: expected $len bytes; received $(length(b))"

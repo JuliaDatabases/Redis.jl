@@ -186,9 +186,10 @@ function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
     response = execute_command(conn, flatten_command("eval", script, numkeys, args))
     convert_response(Any, response)
 end
-function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
-    execute_command(conn, flatten_command("eval", script, numkeys, args))
-end
+#
+#function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
+#    execute_command(conn, flatten_command("eval", script, numkeys, args))
+#end
 @redisfunction "evalsha" Any sha1 numkeys::Integer keys args
 @redisfunction "script_exists" Array script scripts...
 @redisfunction "script_flush" AbstractString
@@ -297,11 +298,11 @@ function punsubscribe(conn::SubscriptionConnection, patterns...)
 end
 
 # Need a specialized version of execute to keep the connection in the transaction state
-function exec(conn::TransactionConnection)
-    response = execute_command(conn, EXEC)
-    multi(conn)
-    response
-end
+#function exec(conn::TransactionConnection)
+#    response = execute_command(conn, EXEC)
+#    multi(conn)
+#    response
+#end
 
 ###############################################################
 # The following Redis commands can be typecast to Julia structs

@@ -1,16 +1,18 @@
 using Base.Test
 
+#tests of internal commands `flatten`, `flatten_command` and `convert_response`
+import Redis: flatten, flatten_command, convert_response
 function flatten_test()
     @test flatten("simple") == "simple"
     @test flatten(1) == "1"
     @test flatten(2.5) == "2.5"
     @test flatten([1, "2", 3.5]) == ["1", "2", "3.5"]
 
-    s = Set({1, 5, "10.9"})
-    @test Set(flatten(s)) == Set({"1", "5", "10.9"})
+    s = Set([1, 5, "10.9"])
+    @test Set(flatten(s)) == Set(["1", "5", "10.9"])
 
-    d = Dict({1 => 2, 3 => 4})
-    @test Set(flatten(d)) == Set({"1", "2", "3", "4"})
+    d = Dict{Any, Any}(1 => 2, 3 => 4)
+    @test Set(flatten(d)) == Set(["1", "2", "3", "4"])
 end
 
 function flatten_command_test()
@@ -19,7 +21,7 @@ function flatten_command_test()
 end
 
 function convert_response_test()
-    @test convert_response(Dict, ["1","2","3","4"]) == Dict({"1" => "2", "3" => "4"})
+    @test convert_response(Dict, ["1","2","3","4"]) == Dict{Any, Any}("1" => "2", "3" => "4")
     @test convert_response(Dict, []) == Dict()
     @test_approx_eq convert_response(Float64, "12.3") 12.3
     @test_approx_eq convert_response(Float64, 10) 10.0
@@ -28,8 +30,8 @@ function convert_response_test()
     @test convert_response(Bool, 1)
     @test convert_response(Bool, 4)
     @test !convert_response(Bool, 0)
-    @test convert_response(Set, 1) == Set({1})
-    @test convert_response(Set, [1,2,3]) == Set({1,2,3})
+    @test convert_response(Set, 1) == Set(1)
+    @test convert_response(Set, [1,2,3]) == Set([1,2,3])
 end
 
 flatten_test()

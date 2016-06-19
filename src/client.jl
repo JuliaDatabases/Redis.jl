@@ -4,14 +4,25 @@ flatten(token) = string(token)
 flatten(token::AbstractString) = token
 flatten(token::Array) = map(string, token)
 flatten(token::Set) = map(string, collect(token))
-flatten(token::Dict) = map(string, vcat(map(collect, token)...))
+# the following doesn't work in JUlia v0.5
+# flatten(token::Dict) = map(string, vcat(map(collect, token)...))
+function flatten(token::Dict)
+    r=AbstractString[]
+    for (k,v) in token
+        push!(r, string(k))
+        push!(r, string(v))
+    end
+    r
+end
 
 flatten_command(command...) = vcat(map(flatten, command)...)
 
 convert_response(::Any, response) = response
 convert_response(::Type{Float64}, response) = float(response)::Float64
 convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
-convert_response(::Type{Bool}, response::Integer) = convert(Bool, response)
+# response `4` corresponds to REDIS_REPLY_NIL, see https://github.com/redis/hiredis/blob/master/read.h
+# the command should not fail, and return NULL.
+convert_response(::Type{Bool}, response::Integer) = response == 1 || response == 4 ? true : false
 convert_response(::Type{Set}, response) = Set(response)
 convert_response(::Type{OrderedSet}, response) = OrderedSet(response)
 function convert_response(::Type{Dict}, response)
@@ -72,7 +83,7 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
 end
 
 macro redisfunction(command, ret_type, args...)
-    func_name = esc(symbol(command))
+    func_name = esc(Symbol(command))
     command = lstrip(command,'_')
     command = split(command, '_')
 
@@ -109,7 +120,7 @@ macro redisfunction(command, ret_type, args...)
 end
 
 macro sentinelfunction(command, ret_type, args...)
-    func_name = esc(symbol(string("sentinel_", command)))
+    func_name = esc(Symbol(string("sentinel_", command)))
     return quote
         function $(func_name)(conn::SentinelConnection, $(args...))
             response = execute_command(conn, flatten_command("sentinel", $command, $(args...)))

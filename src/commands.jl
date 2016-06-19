@@ -297,12 +297,12 @@ function punsubscribe(conn::SubscriptionConnection, patterns...)
     execute_command(conn, unshift!(patterns, "punsubscribe"))
 end
 
-# Need a specialized version of execute to keep the connection in the transaction state
-#function exec(conn::TransactionConnection)
-#    response = execute_command(conn, EXEC)
-#    multi(conn)
-#    response
-#end
+#Need a specialized version of execute to keep the connection in the transaction state
+function exec(conn::TransactionConnection)
+    response = execute_command(conn, EXEC)
+    multi(conn)
+    response
+end
 
 ###############################################################
 # The following Redis commands can be typecast to Julia structs

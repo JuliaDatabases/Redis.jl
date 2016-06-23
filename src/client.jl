@@ -13,6 +13,7 @@ convert_response(::Type{Float64}, response) = float(response)::Float64
 convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
 convert_response(::Type{Bool}, response::Integer) = convert(Bool, response)
 convert_response(::Type{Set}, response) = Set(response)
+convert_response{T}(::Type{Tuple{Integer, T}}, response) = response[1], T(response[2])
 convert_response(::Type{OrderedSet}, response) = OrderedSet(response)
 function convert_response(::Type{Dict}, response)
     iseven(length(response)) || throw(ClientException("Response could not be converted to Dict"))

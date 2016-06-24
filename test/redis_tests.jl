@@ -280,7 +280,8 @@ zadd(conn, testkey, zip(1:length(vals), vals)...)
 @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
 @test zrevrank(conn, testkey, "e") == 5
 @test zscore(conn, testkey, "e") == 5.0
-#@test zscan(conn, testkey, )
+# waiting for issue #29 resolution
+# @test zscan(conn, testkey, )
 del(conn, testkey)
 
 vals2 = ["a", "b", "c", "d"]

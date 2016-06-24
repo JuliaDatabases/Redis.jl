@@ -71,7 +71,7 @@ end
 """
 Formatting of outgoing commands to the Redis server
 
-merl-dev:  added check for Float token. `length(x::Float)==1` causing command
+merl-dev:  added check for Number token. `length(x::Number)==1` causing command
 to fail.  `length(string(token))` returns the appropriate length for Redis.
 """
 function pack_command(command)

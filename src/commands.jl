@@ -70,7 +70,7 @@ end
 @redisfunction "hdel" Integer key field fields...
 @redisfunction "hexists" Bool key field
 @redisfunction "hget" AbstractString key field
-@redisfunction "hgetall" Dict{AbstractString, AbstractString} key
+@redisfunction "hgetall" Dict{S, S} key
 @redisfunction "hincrby" Integer key field increment::Integer
 
 # Bulk string reply: the value of key after the increment,

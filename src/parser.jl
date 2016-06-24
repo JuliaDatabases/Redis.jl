@@ -9,6 +9,7 @@ function parse_simple_string(l::AbstractString)
 end
 
 function parse_error(l::AbstractString)
+    println(l)
     throw(ServerException(l))
 end
 
@@ -32,7 +33,7 @@ function parse_integer(l::AbstractString)
 end
 
 function parse_array(s::TCPSocket, n::Int)
-    a = Any[]
+    a = []
     for i = 1:n
         l = getline(s)
         r = parseline(l, s)
@@ -67,11 +68,17 @@ function parseline(l::AbstractString, s::TCPSocket)
     end
 end
 
-# Formatting of outgoing commands to the Redis server
+"""
+Formatting of outgoing commands to the Redis server
+
+merl-dev:  added check for Float token. `length(x::Float)==1` causing command
+to fail.  `length(string(token))` returns the appropriate length for Redis.
+"""
 function pack_command(command)
     packed_command = "*$(length(command))\r\n"
     for token in command
-        packed_command = string(packed_command, "\$$(length(token))\r\n", token, "\r\n")
+        ltoken = ifelse(typeof(token) <: Number, length(string(token)), length(token))
+        packed_command = string(packed_command, "\$$(ltoken)\r\n", token, "\r\n")
     end
     packed_command
 end

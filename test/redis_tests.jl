@@ -1,45 +1,306 @@
+#=
+A note on coverage: since the Redis package relies heavily on macro definitions, the coverage
+results for the commands.jl file are inaccurate: many of the macro-generated commands find their
+line counts in the macro `redisfunction` and the method `send_command`, both in client.jl.
+=#
+
 using Redis
 using Base.Test
-
-println("WARNING!\nRunning these tests will NOT flushall on localhost:6379, nor leave any traces
-unless some of the tests fail. In that case, test key strings are all prefixed by 'Redis_Test_'
-and can be safely deleted.")
+import DataStructures: OrderedSet
 
 conn = RedisConnection()
-# create some random string keys in case we want to run this on our own Redis instance
+
+flushall(conn)
+
+# some random key names
 testkey = "Redis_Test_"*randstring()
 testkey2 = "Redis_Test_"*randstring()
 testkey3 = "Redis_Test_"*randstring()
 testkey4 = "Redis_Test_"*randstring()
 testhash = "Redis_Test_"*randstring()
 
-############### Simple use for String/Key commands ###############
-@test set(conn, testkey, "testvalue")
-@test get(conn, testkey) == "testvalue"
+# some random strings
+s1 = randstring(); s2 = randstring(); s3 = randstring()
+s4 = randstring(); s5 = randstring(); s6 = randstring()
+s7 = randstring(); s8 = randstring(); s9 = randstring()
+
+# constants for code legibility
+const REDIS_PERSISTENT_KEY =  -1
+const REDIS_EXPIRED_KEY =  -2
+
+############### GET / SET, RANGES, INCR  ###############
+@test set(conn, testkey, s1)
+@test get(conn, testkey) == s1
 @test exists(conn, testkey)
 @test keys(conn, testkey) == Set([testkey])
-@test del(conn, testkey, "nothing", "noway") == 1
-@test get(conn, testkey) == nothing
+@test del(conn, testkey, "notakey", "notakey2") == 1  # only 1 of 3 key exists
 
-@test set(conn, testkey, "testvalue")
-@test getrange(conn, testkey, 0, 3) == "test"
+# 'NIL'
+@test isnull(get(conn, "notakey"))
+
+set(conn, testkey, s1)
+set(conn, testkey2, s2)
+set(conn, testkey3, s3)
+@test randomkey(conn) in keys(conn, "*")
+@test getrange(conn, testkey, 0, 3) == s1[1:4]
+
 @test set(conn, testkey, 2)
 @test incr(conn, testkey) == 3
 @test incrby(conn, testkey, 3) == 6
-@test_approx_eq incrbyfloat(conn, testkey, 1.5) 7.5
-@test set(conn, testkey2, "something")
-@test Set(mget(conn, testkey, testkey2)) == Set(["7.5", "something"])
-@test strlen(conn, testkey2) == 9
-@test del(conn, testkey2) == true
+@test float(incrbyfloat(conn, testkey, 1.5)) == 7.5
+@test mget(conn, testkey, testkey2, testkey3) == ["7.5", s2, s3]
+@test strlen(conn, testkey2) == length(s2)
+@test rename(conn, testkey2, testkey4) == "OK"
+@test testkey4 in keys(conn,"*")
+del(conn, testkey, testkey2, testkey3, testkey4)
 
+@test append(conn, testkey, s1) == length(s1)
+@test append(conn, testkey, s2) == length(s1) + length(s2)
+get(conn, testkey) == string(s1, s2)
+del(conn, testkey)
 
-############### Simple use for Hash commands ###############
+############### BIT commands ###############
+@test setbit(conn,testkey, 0, 1) == 0
+@test setbit(conn,testkey, 2, 1) == 0
+@test getbit(conn, testkey, 0) == 1
+@test getbit(conn, testkey, 1) == 0  # default is 0
+@test getbit(conn, testkey, 2) == 1
+@test bitcount(conn, testkey) == 2
+del(conn, testkey)
+
+for i=0:3
+    setbit(conn, testkey, i, 1)
+    setbit(conn, testkey2, i, 1)
+end
+@test bitop(conn, "AND", testkey3, testkey, testkey2) == 1
+
+for i=0:3
+    setbit(conn, testkey, i, 1)
+    setbit(conn, testkey2, i, 0)
+end
+bitop(conn, "AND", testkey3, testkey, testkey2)
+@test [getbit(conn, testkey3, i) for i in 0:3] == zeros(4)
+
+@test bitop(conn, "OR", testkey3, testkey, testkey2) == 1
+@test [getbit(conn, testkey3, i) for i in 0:3] == ones(4)
+
+setbit(conn, testkey, 0, 0)
+setbit(conn, testkey, 1, 0)
+setbit(conn, testkey2, 1, 1)
+setbit(conn, testkey2, 3, 1)
+@test bitop(conn, "XOR", testkey3, testkey, testkey2) == 1
+@test [getbit(conn, testkey3, i) for i in 0:3] == [0; 1; 1; 0]
+
+@test bitop(conn, "NOT", testkey3, testkey3) == 1
+@test [getbit(conn, testkey3, i) for i in 0:3] == [1; 0; 0; 1]
+del(conn, testkey, testkey2, testkey3)
+
+############### DUMP/ RESTORE commands ###############
+# TODO: DUMP AND RESTORE HAVE ISSUES
+#=
+set(conn, testkey, "10")
+# this line passes test when a client is available:
+@test [UInt8(x) for x in Redis.dump(r, testkey)] == readbytes(`redis-cli dump t`)[1:end-1]
+=#
+
+#= this causes 'ERR DUMP payload version or checksum are wrong', a TODO:  need to
+translate the return value and send it back correctly
+set(conn, testkey, 1)
+redisdump = Redis.dump(conn, testkey)
+del(conn, testkey)
+restore(conn, testkey, 0, redisdump)
+=#
+
+############### MIGRATE / MOVE ###############
+# TODO: test of `migrate` requires 2 server instances in Travis
+set(conn, testkey, s1)
+@test move(conn, testkey, 1)
+@test exists(conn, testkey) == false
+@test Redis.select(conn, 1) == "OK"
+@test get(conn, testkey) == s1
+del(conn, testkey)
+Redis.select(conn, 0)
+
+############### EXPIRE / TTL commands ###############
+set(conn, testkey, s1)
+expire(conn, testkey, 1)
+sleep(1)
+@test exists(conn, testkey) == false
+
+set(conn, testkey, s1)
+expireat(conn, testkey,  round(Int, Dates.datetime2unix(time(conn)+Dates.Second(1))))
+sleep(2) # only passes test with 2 second delay
+@test exists(conn, testkey) == false
+
+set(conn, testkey, s1)
+@test pexpire(conn, testkey, 1)
+@test ttl(conn, testkey) == REDIS_EXPIRED_KEY
+
+set(conn, testkey, s1)
+@test pexpire(conn, testkey, 2000)
+@test pttl(conn, testkey) > 100
+@test persist(conn, testkey)
+@test ttl(conn, testkey) == REDIS_PERSISTENT_KEY
+del(conn, testkey, testkey2, testkey3)
+
+############### LISTS ###############
+@test lpush(conn, testkey, s1, s2, "a", "a", s3, s4) == 6
+@test lpop(conn, testkey) == s4
+@test rpop(conn, testkey) == s1
+@test llen(conn, testkey) == 4
+@test lindex(conn, testkey, 0) == s3
+@test lrem(conn, testkey, 0, "a") == 2
+@test lset(conn, testkey, 0, s5) == "OK"
+@test lindex(conn, testkey, 0) == s5
+@test linsert(conn, testkey, "BEFORE", s2, s3) == 3
+@test linsert(conn, testkey, "AFTER", s3, s6) == 4
+@test lpushx(conn, testkey2, "nothing")  == false
+@test rpushx(conn, testkey2, "nothing")  == false
+@test ltrim(conn, testkey, 0, 1) == "OK"
+@test lrange(conn, testkey, 0, -1) == [s5; s3]
+@test brpop(conn, testkey, 0) == [testkey, s3]
+lpush(conn, testkey, s3)
+@test blpop(conn, testkey, 0) == [testkey, s3]
+lpush(conn, testkey, s4)
+lpush(conn, testkey, s3)
+listvals = [s3; s4; s5]
+for i in 1:3
+    @test rpoplpush(conn, testkey, testkey2) == listvals[4-i]  # rpop
+end
+@test llen(conn, testkey) == 0
+@test llen(conn, testkey2) == 3
+@test lrange(conn, testkey2, 0, -1) == listvals
+for i in 1:3
+    @test brpoplpush(conn, testkey2, testkey, 0) == listvals[4-i]  # rpop
+end
+@test lrange(conn, testkey, 0, -1) == listvals
+
+# the following command can only be applied to lists containing numeric values
+sortablelist = [pi, 1, 2]
+lpush(conn, testkey3, sortablelist)
+@test Redis.sort(conn, testkey3) == ["1.0", "2.0", "3.141592653589793"]
+del(conn, testkey, testkey2, testkey3)
+
+############### HASHES ###############
 @test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
+
+# type stability issues?
+@test hexists(conn, testhash, 1) == true
+@test hexists(conn, testhash, "1") == true
+
 @test hget(conn, testhash, 1) == "2"
-@test Set(hmget(conn, testhash, 1, 3)) == Set(["2", "4"])
 @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
-@test Set(hvals(conn, testhash)) == Set(["2", "4", "6"])
-@test del(conn, testhash) == true
+@test hmget(conn, testhash, 1, 3) == ["2", "4"]
+@test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
+@test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
+@test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
+@test hget(conn, testhash, "3") == "10" # but still sets it to the new value
+@test hset(conn, testhash, "10", "10") == true # new field hset returns true
+@test hget(conn, testhash, "10") == "10" # correctly set new field
+@test hsetnx(conn, testhash, "1", "10") == false # field exists
+@test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
+@test hlen(conn, testhash) == 5  # testhash now has 5 fields
+
+@test hincrby(conn, testhash, "1", 1) == 3
+@test float(hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
+
+del(conn, testhash)
+
+############### SETS ###############
+@test sadd(conn, testkey, s1) == true
+@test sadd(conn, testkey, s1) == false  # already exists
+@test sadd(conn, testkey, s2) == true
+@test smembers(conn, testkey) == Set([s1, s2])
+@test scard(conn, testkey) == 2
+sadd(conn, testkey, s3)
+@test smove(conn, testkey, testkey2, s3) == true
+@test sismember(conn, testkey2, s3) == true
+sadd(conn, testkey2, s2)
+@test sunion(conn, testkey, testkey2) == Set([s1, s2, s3])
+@test sunionstore(conn, testkey3, testkey, testkey2) == 3
+@test srem(conn, testkey3, s1, s2, s3) == 3
+@test smembers(conn, testkey3) == Set([])
+@test sinterstore(conn, testkey3, testkey, testkey2) == 1
+@test srandmember(conn, testkey3) in Set([s1, s2, s3])
+@test issubset(srandmember(conn, testkey2, 2), Set([s1, s2, s3]))
+@test sdiff(conn, testkey, testkey2) == Set([s1])
+@test spop(conn, testkey) in Set([s1, s2, s3])
+del(conn, testkey, testkey2, testkey3)
+
+############### SORTED SETS ###############
+@test zadd(conn, testkey, 0, s1) == true
+@test zadd(conn, testkey, 1., s1) == false
+@test zadd(conn, testkey, 1., s2) == true
+@test zrange(conn, testkey, 0, -1) == OrderedSet([s1, s2])
+@test zcard(conn, testkey) == 2
+zadd(conn, testkey, 1.5, s3)
+@test zcount(conn, testkey, 0, 1) == 2   # range as int
+@test zcount(conn, testkey, "-inf", "+inf") == 3 # range as string
+@test zincrby(conn, testkey, 1, s1) == "2"
+@test float(zincrby(conn, testkey, 1.2, s1)) == 3.2
+@test zrem(conn, testkey, s1, s2) == 2
+del(conn, testkey)
+
+@test zadd(conn, testkey, zip(zeros(1:3), [s1, s2, s3])...) == 3
+del(conn, testkey)
+
+vals = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
+
+# tests where all scores == 0
+zadd(conn, testkey, zip(zeros(length(vals)), vals)...)
+@test zlexcount(conn, testkey, "-", "+") == length(vals)
+@test zlexcount(conn, testkey, "[b", "[f") == 5
+@test zrangebylex(conn, testkey, "-", "[c") == OrderedSet(["a", "b", "c"])
+@test zrangebylex(conn, testkey, "[aa", "(g") == OrderedSet(["b", "c", "d", "e", "f"])
+@test zrangebylex(conn, testkey, "[a", "(g") == OrderedSet(["a", "b", "c", "d", "e", "f"])
+@test zremrangebylex(conn, testkey, "[a", "[h") == 8
+@test zrange(conn, testkey, 0, -1) == OrderedSet(["i", "j"])
+del(conn, testkey)
+
+# tests where scores are sequence 1:10
+zadd(conn, testkey, zip(1:length(vals), vals)...)
+@test zrangebyscore(conn, testkey, "(1", "2") == OrderedSet(["b"])
+@test zrangebyscore(conn, testkey, "1", "2") == OrderedSet(["a", "b"])
+@test zrangebyscore(conn, testkey, "(1", "(2") == OrderedSet([])
+@test zrank(conn, testkey, "d") == 3 # redis arrays 0-base
+
+# 'NIL'
+@test isnull(zrank(conn, testkey, "z"))
+del(conn, testkey)
+
+zadd(conn, testkey, zip(1:length(vals), vals)...)
+@test zremrangebyrank(conn, testkey, 0, 1) == 2
+@test zrange(conn, testkey, 0, -1, "WITHSCORES") == OrderedSet(["c", "3", "d", "4", "e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"])
+@test zremrangebyscore(conn, testkey, "-inf", "(5") == 2
+@test zrange(conn, testkey, 0, -1, "WITHSCORES") == OrderedSet(["e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"])
+@test zrevrange(conn, testkey, 0, -1) == OrderedSet(["j", "i", "h", "g", "f", "e"])
+@test zrevrangebyscore(conn, testkey, "+inf", "-inf") == OrderedSet(["j", "i", "h", "g", "f", "e"])
+@test zrevrangebyscore(conn, testkey, "+inf", "-inf", "WITHSCORES", "LIMIT", 2, 3) == OrderedSet(["h", "8", "g", "7", "f", "6"])
+@test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
+@test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
+@test zrevrank(conn, testkey, "e") == 5
+@test zscore(conn, testkey, "e") == 5.0
+#@test zscan(conn, testkey, )
+del(conn, testkey)
+
+vals2 = ["a", "b", "c", "d"]
+zadd(conn, testkey, zip(1:length(vals), vals)...)
+zadd(conn, testkey2, zip(1:length(vals2), vals2)...)
+@test zunionstore(conn, testkey3, 2, [testkey, testkey2]) == 10
+@test zrange(conn, testkey3, 0, -1) == OrderedSet(vals)
+del(conn, testkey3)
+
+zunionstore(conn, testkey3, 2, [testkey, testkey2], [2; 3])
+@test zrange(conn, testkey3, 0, -1) == OrderedSet(["a", "b", "e", "f", "g", "c", "h", "i", "d", "j"])
+zunionstore(conn, testkey3, 2, [testkey, testkey2], [2; 3], aggregate=Aggregate.Max)
+@test zrange(conn, testkey3, 0, -1) == OrderedSet(["a", "b", "c", "e", "d", "f", "g", "h", "i", "j"])
+zunionstore(conn, testkey3, 2, [testkey, testkey2], [2; 3], aggregate=Aggregate.Min)
+@test zrange(conn, testkey3, 0, -1) == OrderedSet(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"])
+del(conn, testkey3)
+
+vals2 = ["a", "b", "c", "d"]
+@test zinterstore(conn, testkey3, 2, [testkey, testkey2]) == 4
+
 
 ############### Transactions ###############
 trans = open_transaction(conn)
@@ -47,7 +308,7 @@ trans = open_transaction(conn)
 @test get(trans, testkey) == "QUEUED"
 @test exec(trans) == ["OK", "foobar"]
 @test del(trans, testkey) == "QUEUED"
-@test exec(trans) == Any[true]
+@test exec(trans) == [true]
 disconnect(trans)
 
 ############## Pipelining #############
@@ -61,7 +322,7 @@ result = read_pipeline(pipe)
 @test result == ["anything", "OK"]
 @test del(pipe, testkey3) == 1
 @test del(pipe, testkey4) == 2
-@test result ==  ["anything","OK"]
+@test result ==  ["anything", "OK"]
 disconnect(pipe)
 
 ############### Pub/sub ###############
@@ -74,6 +335,7 @@ subscribe(subs, "duplicate", f)
 @test publish(conn, "channel", "hello, world!") == 1
 sleep(2)
 @test x == ["hello, world!"]
+
 # following command prints ("Invalid response received: ")
 disconnect(subs)
 

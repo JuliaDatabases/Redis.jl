@@ -15,17 +15,35 @@ function flatten(token::Dict)
     r
 end
 
+# this is required to add items to a sorted set when all the scores are identical
+function flatten{T<:Number, U<:AbstractString}(token::Tuple{T, U}...)
+    r=[]
+    for item in token
+        push!(r, item[1])
+        push!(r, item[2])
+    end
+    r
+end
+
 flatten_command(command...) = vcat(map(flatten, command)...)
 
-convert_response(::Any, response) = response
+# this type check doesn't appear to negatively affect performance
+function convert_response(::Any, response)
+    if typeof(response) <: Array
+        convert(Array{AbstractString, 1}, response)
+    elseif response == nothing
+        Nullable()
+    else
+        response
+    end
+end
+
 convert_response(::Type{Float64}, response) = float(response)::Float64
 convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
-# response `4` corresponds to REDIS_REPLY_NIL, see https://github.com/redis/hiredis/blob/master/read.h
-# the command should not fail, and return NULL.
-convert_response(::Type{Bool}, response::Integer) = response == 1 || response == 4 ? true : false
-convert_response(::Type{Set}, response) = Set(response)
-convert_response(::Type{OrderedSet}, response) = OrderedSet(response)
-function convert_response(::Type{Dict}, response)
+convert_response(::Type{Bool}, response::Integer) = response == 1 ? true : false
+convert_response(::Type{Set{AbstractString}}, response) = Set{AbstractString}(response)
+convert_response(::Type{OrderedSet{AbstractString}}, response) = OrderedSet{AbstractString}(response)
+function convert_response(::Type{Dict{AbstractString, AbstractString}}, response)
     iseven(length(response)) || throw(ClientException("Response could not be converted to Dict"))
     retdict = Dict{AbstractString, AbstractString}()
     for i=1:2:length(response)
@@ -82,7 +100,7 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
     end
 end
 
-macro redisfunction(command, ret_type, args...)
+macro redisfunction(command::AbstractString, ret_type, args...)
     func_name = esc(Symbol(command))
     command = lstrip(command,'_')
     command = split(command, '_')

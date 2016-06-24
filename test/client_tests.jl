@@ -21,17 +21,14 @@ function flatten_command_test()
 end
 
 function convert_response_test()
-    @test convert_response(Dict, ["1","2","3","4"]) == Dict{Any, Any}("1" => "2", "3" => "4")
-    @test convert_response(Dict, []) == Dict()
+    @test convert_response(Dict{AbstractString, AbstractString}, ["1","2","3","4"]) == Dict("1" => "2", "3" => "4")
+    @test convert_response(Dict{AbstractString, AbstractString}, []) == Dict()
     @test_approx_eq convert_response(Float64, "12.3") 12.3
     @test_approx_eq convert_response(Float64, 10) 10.0
     @test convert_response(Bool, "OK")
     @test !convert_response(Bool, "f")
     @test convert_response(Bool, 1)
-    @test convert_response(Bool, 4)
     @test !convert_response(Bool, 0)
-    @test convert_response(Set, 1) == Set(1)
-    @test convert_response(Set, [1,2,3]) == Set([1,2,3])
 end
 
 flatten_test()

@@ -76,7 +76,7 @@ end
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
 @redisfunction "hvals" Array key
-@redisfunction "hscan" Tuple{Integer, Array} key cursor::Integer options...
+@redisfunction "hscan" Tuple{Integer, Dict} key cursor::Integer options...
 
 # List commands
 @redisfunction "blpop" AbstractString keys timeout::Integer
@@ -134,7 +134,7 @@ end
 @redisfunction "zrevrangebyscore" OrderedSet key start::Number finish::Number options...
 @redisfunction "zrevrank" Integer key member
 @redisfunction "zscore" Float64 key member
-@redisfunction "zscan" Tuple{Integer, OrderedSet} key cursor::Integer options...
+@redisfunction "zscan" Tuple{Integer, OrderedSet{Tuple{AbstractString, Float64}}} key cursor::Integer options...
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)
     length(keys) > 0 || throw(ClientException("Must supply at least one key"))

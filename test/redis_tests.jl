@@ -146,13 +146,17 @@ del(conn, testkey, testkey2, testkey3)
 
 ############### LISTS ###############
 @test lpush(conn, testkey, s1, s2, "a", "a", s3, s4) == 6
-@test lpop(conn, testkey) == s4
-@test rpop(conn, testkey) == s1
+@test lpop(conn, testkey) == Nullable(s4)
+@test rpop(conn, testkey) == Nullable(s1)
+@test isnull(lpop(conn, "non_existent_list"))
+@test isnull(rpop(conn, "non_existent_list"))
 @test llen(conn, testkey) == 4
-@test lindex(conn, testkey, 0) == s3
+@test isnull(lindex(conn, "non_existent_list", 1))
+@test lindex(conn, testkey, 0) == Nullable(s3)
+@test isnull(lindex(conn, testkey, 10))
 @test lrem(conn, testkey, 0, "a") == 2
 @test lset(conn, testkey, 0, s5) == "OK"
-@test lindex(conn, testkey, 0) == s5
+@test lindex(conn, testkey, 0) == Nullable(s5)
 @test linsert(conn, testkey, "BEFORE", s2, s3) == 3
 @test linsert(conn, testkey, "AFTER", s3, s6) == 4
 @test lpushx(conn, testkey2, "nothing")  == false
@@ -166,8 +170,9 @@ lpush(conn, testkey, s4)
 lpush(conn, testkey, s3)
 listvals = [s3; s4; s5]
 for i in 1:3
-    @test rpoplpush(conn, testkey, testkey2) == listvals[4-i]  # rpop
+    @test rpoplpush(conn, testkey, testkey2) == Nullable(listvals[4-i])  # rpop
 end
+@test isnull(rpoplpush(conn, testkey, testkey2))
 @test llen(conn, testkey) == 0
 @test llen(conn, testkey2) == 3
 @test lrange(conn, testkey2, 0, -1) == listvals
@@ -188,16 +193,21 @@ del(conn, testkey, testkey2, testkey3)
 # type stability issues?
 @test hexists(conn, testhash, 1) == true
 @test hexists(conn, testhash, "1") == true
-
-@test hget(conn, testhash, 1) == "2"
+@test hget(conn, testhash, 1) == Nullable("2")
 @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
-@test hmget(conn, testhash, 1, 3) == ["2", "4"]
+
+@test isnull(hget(conn, testhash, "non_existent_field"))
+@test hmget(conn, testhash, 1, 3) == [Nullable("2"), Nullable("4")]
+a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
+@test isnull(a[1])
+@test isnull(a[2])
+
 @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
 @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
 @test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
-@test hget(conn, testhash, "3") == "10" # but still sets it to the new value
+@test hget(conn, testhash, "3") == Nullable("10") # but still sets it to the new value
 @test hset(conn, testhash, "10", "10") == true # new field hset returns true
-@test hget(conn, testhash, "10") == "10" # correctly set new field
+@test hget(conn, testhash, "10") == Nullable("10") # correctly set new field
 @test hsetnx(conn, testhash, "1", "10") == false # field exists
 @test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
 @test hlen(conn, testhash) == 5  # testhash now has 5 fields
@@ -222,10 +232,15 @@ sadd(conn, testkey2, s2)
 @test srem(conn, testkey3, s1, s2, s3) == 3
 @test smembers(conn, testkey3) == Set([])
 @test sinterstore(conn, testkey3, testkey, testkey2) == 1
-@test srandmember(conn, testkey3) in Set([s1, s2, s3])
+# only the following method returns 'nil' if the Set does not exist
+@test srandmember(conn, testkey3) in Set([Nullable(s1), Nullable(s2), Nullable(s3)])
+@test isnull(srandmember(conn, "empty_set"))
+# this method returns an emtpty Set if the the Set is empty
 @test issubset(srandmember(conn, testkey2, 2), Set([s1, s2, s3]))
+@test srandmember(conn, "non_existent_set", 10) == Set{AbstractString}()
 @test sdiff(conn, testkey, testkey2) == Set([s1])
-@test spop(conn, testkey) in Set([s1, s2, s3])
+@test spop(conn, testkey) in Set([Nullable(s1), Nullable(s2), Nullable(s3)])
+@test isnull(spop(conn, "empty_set"))
 del(conn, testkey, testkey2, testkey3)
 
 ############### SORTED SETS ###############
@@ -280,9 +295,9 @@ zadd(conn, testkey, zip(1:length(vals), vals)...)
 @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
 @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
 @test zrevrank(conn, testkey, "e") == Nullable(5)
+@test isnull(zrevrank(conn, "ordered_set", "non_existent_member"))
 @test zscore(conn, testkey, "e") == Nullable(5.0)
-# waiting for issue #29 resolution
-# @test zscan(conn, testkey, )
+@test isnull(zscore(conn, "ordered_set", "non_existent_member"))
 del(conn, testkey)
 
 vals2 = ["a", "b", "c", "d"]
@@ -305,7 +320,7 @@ vals2 = ["a", "b", "c", "d"]
 del(conn, testkey, testkey2, testkey3)
 
 ############### SCAN / SSCAN / HSCAN / ZSCAN ###############
-
+# waiting for issue #29 resolution
 
 
 

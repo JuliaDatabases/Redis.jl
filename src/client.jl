@@ -53,8 +53,8 @@ function convert_eval_response(::Any, response)
 end
 
 import Base: ==
-=={T<:AbstractString,U<:AbstractString}(A::Nullable{T},B::Nullable{U}) = get(A) == get(B)
-=={T<:Number,U<:Number}(A::Nullable{T},B::Nullable{U}) = get(A) == get(B)
+=={T<:AbstractString, U<:AbstractString}(A::Nullable{T}, B::Nullable{U}) = get(A) == get(B)
+=={T<:Number, U<:Number}(A::Nullable{T}, B::Nullable{U}) = get(A) == get(B)
 
 convert_response(::Type{AbstractString}, response) = string(response)
 convert_response(::Type{Integer}, response) = response

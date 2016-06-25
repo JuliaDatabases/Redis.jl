@@ -68,7 +68,7 @@ end
 # Hash commands
 @redisfunction "hdel" Integer key field fields...
 @redisfunction "hexists" Bool key field
-@redisfunction "hget" AbstractString key field
+@redisfunction "hget" Nullable{AbstractString} key field
 @redisfunction "hgetall" Dict{AbstractString, AbstractString} key
 @redisfunction "hincrby" Integer key field increment::Integer
 
@@ -78,7 +78,7 @@ end
 
 @redisfunction "hkeys" Array{AbstractString, 1} key
 @redisfunction "hlen" Integer key
-@redisfunction "hmget" Array{AbstractString, 1} key field fields...
+@redisfunction "hmget" Array{Nullable{AbstractString}, 1} key field fields...
 @redisfunction "hmset" Bool key value
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
@@ -89,18 +89,18 @@ end
 @redisfunction "blpop" Array{AbstractString, 1} keys timeout
 @redisfunction "brpop" Array{AbstractString, 1} keys timeout
 @redisfunction "brpoplpush" AbstractString source destination timeout
-@redisfunction "lindex" AbstractString key index
+@redisfunction "lindex" Nullable{AbstractString} key index
 @redisfunction "linsert" Integer key place pivot value
 @redisfunction "llen" Integer key
-@redisfunction "lpop" AbstractString key
+@redisfunction "lpop" Nullable{AbstractString} key
 @redisfunction "lpush" Integer key value values...
 @redisfunction "lpushx" Integer key value
 @redisfunction "lrange" Array{AbstractString, 1} key start finish
 @redisfunction "lrem" Integer key count value
 @redisfunction "lset" AbstractString key index value
 @redisfunction "ltrim" AbstractString key start finish
-@redisfunction "rpop" AbstractString key
-@redisfunction "rpoplpush" AbstractString source destination
+@redisfunction "rpop" Nullable{AbstractString} key
+@redisfunction "rpoplpush" Nullable{AbstractString} source destination
 @redisfunction "rpush" Integer key value values...
 @redisfunction "rpushx" Integer key value
 
@@ -114,8 +114,8 @@ end
 @redisfunction "sismember" Bool key member
 @redisfunction "smembers" Set{AbstractString} key
 @redisfunction "smove" Bool source destination member
-@redisfunction "spop" AbstractString key
-@redisfunction "srandmember" AbstractString key
+@redisfunction "spop" Nullable{AbstractString} key
+@redisfunction "srandmember" Nullable{AbstractString} key
 @redisfunction "srandmember" Set{AbstractString} key count
 @redisfunction "srem" Integer key member members...
 @redisfunction "sunion" Set{AbstractString} key keys...

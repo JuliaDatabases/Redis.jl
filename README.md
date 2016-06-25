@@ -1,7 +1,7 @@
 # Redis.jl
 
 
-[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)[![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)
+[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl) [![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)  [![DataFrames](http://pkg.julialang.org/badges/Redis_0.4.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.4) [![DataFrames](http://pkg.julialang.org/badges/Redis_0.5.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.5)
 
 
 
@@ -159,6 +159,31 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 
 `SentinelConnection` is also `SubscribableConnection`, allowing the user to build a `SubscriptionConnection` for monitoring cluster health through Sentinel messages. See [the Redis Sentinel documentation](http://redis.io/topics/sentinel) for more information.
 
-## Notes
+### Notes
 
 Actual API usage can be found in test/redis_tests.jl.
+
+### Redis Commands returning 'NIL'
+
+The following methods return a `Nullable{T}(value)`.  As per the Julia `Nullable`s interface,
+if no value exists then `isnull(result)` will return `true`, and `get(result)` will throw a `NullException`.
+
+#### Lists
+* `lindex(conn, "non_existent_list", 1)`
+* `lindex(conn, "one_element_list", 2)`
+* `lpop(conn, "non_existent_list")`
+* `rpop(conn, "non_existent_list")`
+* `rpoplpush(conn, "non_existent_list", "some_list")`
+
+#### Sets
+* `spop(conn, "empty_set")`
+* `srandmember(conn, "empty_set")`     
+
+####Sorted Sets
+* `zrank(conn, "ordered_set", "non_existent_member")`
+* `zrevrank(conn, "ordered_set", "non_existent_member")`
+* `zscore(conn, "ordered_set", "non_existent_member")`
+
+#### Hashes
+* `hget(conn, "some_hash", "non_existent_field")`
+* `hmget(conn, "some_hash", "nofield1", "nofield2")`

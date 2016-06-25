@@ -101,7 +101,7 @@ end
 @redisfunction "ltrim" AbstractString key start finish
 @redisfunction "rpop" AbstractString key
 @redisfunction "rpoplpush" AbstractString source destination
-@redisfunction "rpush" integer key value values...
+@redisfunction "rpush" Integer key value values...
 @redisfunction "rpushx" Integer key value
 
 # Set commands
@@ -109,7 +109,7 @@ end
 @redisfunction "scard" Integer key
 @redisfunction "sdiff" Set{AbstractString} key keys...
 @redisfunction "sdiffstore" Integer destination key keys...
-@redisfunction "sinter" Set{S} key keys...
+@redisfunction "sinter" Set{AbstractString} key keys...
 @redisfunction "sinterstore" Integer destination key keys...
 @redisfunction "sismember" Bool key member
 @redisfunction "smembers" Set{AbstractString} key
@@ -255,7 +255,7 @@ end
 @redisfunction "_time" Array{AbstractString, 1}
 
 # Sentinel commands
-@sentinelfunction "master" Dict{S,S} mastername
+@sentinelfunction "master" Dict{AbstractString, AbstractString} mastername
 @sentinelfunction "reset" Integer pattern
 @sentinelfunction "failover" Any mastername
 @sentinelfunction "monitor" Bool name ip port quorum

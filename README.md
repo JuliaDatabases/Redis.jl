@@ -1,9 +1,9 @@
 # Redis.jl
 
 
-[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)
+[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)[![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)
 
-[![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)
+
 
 Redis.jl is a fully-featured Redis client for the Julia programming language. The implementation is an attempt at an easy to understand, minimalistic API that mirrors actual Redis commands as closely as possible.
 

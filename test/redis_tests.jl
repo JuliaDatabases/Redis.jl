@@ -30,7 +30,7 @@ const REDIS_EXPIRED_KEY =  -2
 
 ############### GET / SET, RANGES, INCR  ###############
 @test set(conn, testkey, s1)
-@test get(conn, testkey) == s1
+@test get(conn, testkey) == Nullable(s1)
 @test exists(conn, testkey)
 @test keys(conn, testkey) == Set([testkey])
 @test del(conn, testkey, "notakey", "notakey2") == 1  # only 1 of 3 key exists
@@ -41,14 +41,15 @@ const REDIS_EXPIRED_KEY =  -2
 set(conn, testkey, s1)
 set(conn, testkey2, s2)
 set(conn, testkey3, s3)
-@test randomkey(conn) in keys(conn, "*")
+# RANDOMKEY can return 'NIL', so it returns Nullable.  KEYS * always returns empty Set when Redis is empty
+@test get(randomkey(conn)) in keys(conn, "*")
 @test getrange(conn, testkey, 0, 3) == s1[1:4]
 
 @test set(conn, testkey, 2)
 @test incr(conn, testkey) == 3
 @test incrby(conn, testkey, 3) == 6
-@test float(incrbyfloat(conn, testkey, 1.5)) == 7.5
-@test mget(conn, testkey, testkey2, testkey3) == ["7.5", s2, s3]
+@test incrbyfloat(conn, testkey, 1.5) == "7.5"
+@test mget(conn, testkey, testkey2, testkey3) == [Nullable("7.5"), Nullable(s2), Nullable(s3)]
 @test strlen(conn, testkey2) == length(s2)
 @test rename(conn, testkey2, testkey4) == "OK"
 @test testkey4 in keys(conn,"*")
@@ -117,7 +118,7 @@ set(conn, testkey, s1)
 @test move(conn, testkey, 1)
 @test exists(conn, testkey) == false
 @test Redis.select(conn, 1) == "OK"
-@test get(conn, testkey) == s1
+@test get(conn, testkey) == Nullable(s1)
 del(conn, testkey)
 Redis.select(conn, 0)
 
@@ -262,7 +263,7 @@ zadd(conn, testkey, zip(1:length(vals), vals)...)
 @test zrangebyscore(conn, testkey, "(1", "2") == OrderedSet(["b"])
 @test zrangebyscore(conn, testkey, "1", "2") == OrderedSet(["a", "b"])
 @test zrangebyscore(conn, testkey, "(1", "(2") == OrderedSet([])
-@test zrank(conn, testkey, "d") == 3 # redis arrays 0-base
+@test zrank(conn, testkey, "d") == Nullable(3) # redis arrays 0-base
 
 # 'NIL'
 @test isnull(zrank(conn, testkey, "z"))
@@ -278,8 +279,8 @@ zadd(conn, testkey, zip(1:length(vals), vals)...)
 @test zrevrangebyscore(conn, testkey, "+inf", "-inf", "WITHSCORES", "LIMIT", 2, 3) == OrderedSet(["h", "8", "g", "7", "f", "6"])
 @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
 @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
-@test zrevrank(conn, testkey, "e") == 5
-@test zscore(conn, testkey, "e") == 5.0
+@test zrevrank(conn, testkey, "e") == Nullable(5)
+@test zscore(conn, testkey, "e") == Nullable(5.0)
 # waiting for issue #29 resolution
 # @test zscan(conn, testkey, )
 del(conn, testkey)
@@ -301,7 +302,42 @@ del(conn, testkey3)
 
 vals2 = ["a", "b", "c", "d"]
 @test zinterstore(conn, testkey3, 2, [testkey, testkey2]) == 4
+del(conn, testkey, testkey2, testkey3)
 
+############### SCAN / SSCAN / HSCAN / ZSCAN ###############
+
+
+
+
+############### EVAL / EVALSHA ###############
+script = "return {KEYS[1], KEYS[2], ARGV[1], ARGV[2]}"
+args = ["key1", "key2", "first", "second"]
+resp = evalscript(conn, script, 2, args)
+@test resp == args
+del(conn, "key1")
+
+script = "return redis.call('set', KEYS[1], 'bar')"
+ky = "foo"
+resp = evalscript(conn, script, 1, [ky])
+@test resp == "OK"
+del(conn, ky)
+
+#@test evalscript(conn, "return {'1','2',{'3','Hello World!'}}", 0, []) == ["1"; "2"; ["3","Hello World!"]]
+
+# NOTE the truncated float, and truncated array in the response
+# as per http://redis.io/commands/eval
+#       Lua has a single numerical type, Lua numbers. There is
+#       no distinction between integers and floats. So we always
+#       convert Lua numbers into integer replies, removing the
+#       decimal part of the number if any. If you want to return
+#       a float from Lua you should return it as a string, exactly
+#       like Redis itself does (see for instance the ZSCORE command).
+#
+#       There is no simple way to have nils inside Lua arrays,
+#       this is a result of Lua table semantics, so when Redis
+#       converts a Lua array into Redis protocol the conversion
+#       is stopped if a nil is encountered.
+@test evalscript(conn, "return {1, 2, 3.3333, 'foo', nil, 'bar'}",  0, []) == [1, 2, 3, "foo"]
 
 ############### Transactions ###############
 trans = open_transaction(conn)
@@ -339,5 +375,7 @@ sleep(2)
 
 # following command prints ("Invalid response received: ")
 disconnect(subs)
+
+
 
 disconnect(conn)

@@ -9,26 +9,25 @@ baremodule Aggregate
     const Max = "max"
 end
 
-S = AbstractString
 # Key commands
 @redisfunction "del" Integer key...
 @redisfunction "dump" AbstractString key
 @redisfunction "exists" Bool key
 @redisfunction "expire" Bool key seconds
 @redisfunction "expireat" Bool key timestamp
-@redisfunction "keys" Set{S} pattern
+@redisfunction "keys" Set{AbstractString} pattern
 @redisfunction "migrate" Bool host port key destinationdb timeout
 @redisfunction "move" Bool key db
 @redisfunction "persist" Bool key
 @redisfunction "pexpire" Bool key milliseconds
 @redisfunction "pexpireat" Bool key millisecondstimestamp
 @redisfunction "pttl" Integer key
-@redisfunction "randomkey" AbstractString
+@redisfunction "randomkey" Nullable{AbstractString}
 @redisfunction "rename" AbstractString key newkey
 @redisfunction "renamenx" Bool key newkey
 @redisfunction "restore" Bool key ttl serializedvalue
-@redisfunction "scan" Array cursor::Integer options...
-@redisfunction "sort" Array{S} key options...
+@redisfunction "scan" Array{AbstractString, 1} cursor::Integer options...
+@redisfunction "sort" Array{AbstractString, 1} key options...
 @redisfunction "ttl" Integer key
 function keytype(conn::RedisConnection, key)
     response = execute_command(conn, flatten_command("type", key))
@@ -45,7 +44,7 @@ end
 @redisfunction "bitpos" Integer key bit options...
 @redisfunction "decr" Integer key
 @redisfunction "decrby" Integer key decrement
-@redisfunction "get" AbstractString key
+@redisfunction "get" Nullable{AbstractString} key
 @redisfunction "getbit" Integer key offset
 @redisfunction "getrange" AbstractString key start finish
 @redisfunction "getset" AbstractString key value
@@ -55,7 +54,7 @@ end
 # Bulk string reply: the value of key after the increment,
 # as per http://redis.io/commands/incrbyfloat
 @redisfunction "incrbyfloat" AbstractString key increment::Float64
-@redisfunction "mget" Array key keys...
+@redisfunction "mget" Array{Nullable{AbstractString}, 1} key keys...
 @redisfunction "mset" Bool keyvalues
 @redisfunction "msetnx" Bool keyvalues
 @redisfunction "psetex" AbstractString key milliseconds value
@@ -70,25 +69,25 @@ end
 @redisfunction "hdel" Integer key field fields...
 @redisfunction "hexists" Bool key field
 @redisfunction "hget" AbstractString key field
-@redisfunction "hgetall" Dict{S, S} key
+@redisfunction "hgetall" Dict{AbstractString, AbstractString} key
 @redisfunction "hincrby" Integer key field increment::Integer
 
 # Bulk string reply: the value of key after the increment,
 # as per http://redis.io/commands/hincrbyfloat
 @redisfunction "hincrbyfloat" AbstractString key field increment::Float64
 
-@redisfunction "hkeys" Array{S} key
+@redisfunction "hkeys" Array{AbstractString, 1} key
 @redisfunction "hlen" Integer key
-@redisfunction "hmget" Array{S} key field fields...
+@redisfunction "hmget" Array{AbstractString, 1} key field fields...
 @redisfunction "hmset" Bool key value
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
-@redisfunction "hvals" Array{S} key
+@redisfunction "hvals" Array{AbstractString, 1} key
 @redisfunction "hscan" Array key cursor::Integer options...
 
 # List commands
-@redisfunction "blpop" AbstractString keys timeout
-@redisfunction "brpop" AbstractString keys timeout
+@redisfunction "blpop" Array{AbstractString, 1} keys timeout
+@redisfunction "brpop" Array{AbstractString, 1} keys timeout
 @redisfunction "brpoplpush" AbstractString source destination timeout
 @redisfunction "lindex" AbstractString key index
 @redisfunction "linsert" Integer key place pivot value
@@ -96,7 +95,7 @@ end
 @redisfunction "lpop" AbstractString key
 @redisfunction "lpush" Integer key value values...
 @redisfunction "lpushx" Integer key value
-@redisfunction "lrange" Array{S} key start finish
+@redisfunction "lrange" Array{AbstractString, 1} key start finish
 @redisfunction "lrem" Integer key count value
 @redisfunction "lset" AbstractString key index value
 @redisfunction "ltrim" AbstractString key start finish
@@ -108,20 +107,20 @@ end
 # Set commands
 @redisfunction "sadd" Integer key member members...
 @redisfunction "scard" Integer key
-@redisfunction "sdiff" Set{S} key keys...
+@redisfunction "sdiff" Set{AbstractString} key keys...
 @redisfunction "sdiffstore" Integer destination key keys...
 @redisfunction "sinter" Set{S} key keys...
 @redisfunction "sinterstore" Integer destination key keys...
 @redisfunction "sismember" Bool key member
-@redisfunction "smembers" Set{S} key
+@redisfunction "smembers" Set{AbstractString} key
 @redisfunction "smove" Bool source destination member
 @redisfunction "spop" AbstractString key
 @redisfunction "srandmember" AbstractString key
-@redisfunction "srandmember" Set{S} key count
+@redisfunction "srandmember" Set{AbstractString} key count
 @redisfunction "srem" Integer key member members...
-@redisfunction "sunion" Set{S} key keys...
+@redisfunction "sunion" Set{AbstractString} key keys...
 @redisfunction "sunionstore" Integer destination key keys...
-@redisfunction "sscan" Set key cursor::Integer options...
+@redisfunction "sscan" Set{AbstractString} key cursor::Integer options...
 
 # Sorted set commands
 #=
@@ -150,19 +149,19 @@ resorting to the use of `Dict`, which cannot be used in the case where all entri
 @redisfunction "zincrby" AbstractString key increment member
 
 @redisfunction "zlexcount" Integer key min max
-@redisfunction "zrange" OrderedSet{S} key start finish options...
-@redisfunction "zrangebylex" OrderedSet{S} key min max options...
-@redisfunction "zrangebyscore" OrderedSet{S} key min max options...
-@redisfunction "zrank" Integer key member
+@redisfunction "zrange" OrderedSet{AbstractString} key start finish options...
+@redisfunction "zrangebylex" OrderedSet{AbstractString} key min max options...
+@redisfunction "zrangebyscore" OrderedSet{AbstractString} key min max options...
+@redisfunction "zrank" Nullable{Integer} key member
 @redisfunction "zrem" Integer key member members...
 @redisfunction "zremrangebylex" Integer key min max
 @redisfunction "zremrangebyrank" Integer key start finish
 @redisfunction "zremrangebyscore" Integer key start finish
-@redisfunction "zrevrange" OrderedSet{S} key start finish options...
-@redisfunction "zrevrangebyscore" OrderedSet{S} key start finish options...
-@redisfunction "zrevrank" Integer key member
-@redisfunction "zscore" Float64 key member
-@redisfunction "zscan" Set key cursor::Integer options...
+@redisfunction "zrevrange" OrderedSet{AbstractString} key start finish options...
+@redisfunction "zrevrangebyscore" OrderedSet{AbstractString} key start finish options...
+@redisfunction "zrevrank" Nullable{Integer} key member
+@redisfunction "zscore" Nullable{Float64} key member
+@redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)
     length(keys) > 0 || throw(ClientException("Must supply at least one key"))
@@ -178,6 +177,7 @@ function _build_store_internal(destination, numkeys, keys, weights, aggregate, c
     vcat([command, destination, numkeys], keys, suffix)
 end
 
+# TODO: PipelineConnection and TransactionConnection
 function zinterstore(conn::RedisConnectionBase, destination, numkeys,
     keys::Array, weights=[]; aggregate=Aggregate.NotSet)
     command = _build_store_internal(destination, numkeys, keys, weights, aggregate, "zinterstore")
@@ -204,17 +204,20 @@ end
 
 # Transaction commands
 @redisfunction "discard" Bool
-@redisfunction "exec" Array
+@redisfunction "exec" Array{Bool} # only one element ever in this array?
 @redisfunction "multi" Bool
 @redisfunction "unwatch" Bool
 @redisfunction "watch" Bool key keys...
 
 # Scripting commands
+# TODO: PipelineConnection and TransactionConnection
 function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
     response = execute_command(conn, flatten_command("eval", script, numkeys, args))
-    convert_response(Any, response)
+    convert_eval_response(Any, response)
 end
 
+#################################################################
+# TODO: NEED TO TEST BEYOND THIS POINT
 @redisfunction "evalsha" Any sha1 numkeys keys args
 @redisfunction "script_exists" Array script scripts...
 @redisfunction "script_flush" AbstractString
@@ -240,7 +243,7 @@ end
 @redisfunction "debug_object" AbstractString key
 @redisfunction "debug_segfault" Any
 @redisfunction "flushall" AbstractString
-@redisfunction "flushdb" AbstractString
+@redisfunction "flushdb" AbstractString Integer
 @redisfunction "info" AbstractString
 @redisfunction "info" AbstractString section
 @redisfunction "lastsave" Integer
@@ -249,7 +252,7 @@ end
 @redisfunction "shutdown" AbstractString
 @redisfunction "shutdown" AbstractString option
 @redisfunction "slaveof" AbstractString host port
-@redisfunction "_time" Array
+@redisfunction "_time" Array{AbstractString, 1}
 
 # Sentinel commands
 @sentinelfunction "master" Dict{S,S} mastername

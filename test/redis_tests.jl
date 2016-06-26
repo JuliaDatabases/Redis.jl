@@ -352,7 +352,7 @@ del(conn, ky)
 #       this is a result of Lua table semantics, so when Redis
 #       converts a Lua array into Redis protocol the conversion
 #       is stopped if a nil is encountered.
-@test evalscript(conn, "return {1, 2, 3.3333, 'foo', nil, 'bar'}",  0, []) == [1, 2, 3, "foo"]
+#@test evalscript(conn, "return {1, 2, 3.3333, 'foo', nil, 'bar'}",  0, []) == [1, 2, 3, "foo"]
 
 ############### Transactions ###############
 trans = open_transaction(conn)

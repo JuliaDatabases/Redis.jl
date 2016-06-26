@@ -1,8 +1,6 @@
-using Base.Test
-
-#tests of internal commands `flatten`, `flatten_command` and `convert_response`
 import Redis: flatten, flatten_command, convert_response
-function flatten_test()
+
+@testset "Flatten" begin
     @test flatten("simple") == "simple"
     @test flatten(1) == "1"
     @test flatten(2.5) == "2.5"
@@ -15,12 +13,12 @@ function flatten_test()
     @test Set(flatten(d)) == Set(["1", "2", "3", "4"])
 end
 
-function flatten_command_test()
+@testset "Commands" begin
     result = flatten_command(1, 2, ["4", "5", 6.7], 8)
     @test result == ["1", "2", "4", "5", "6.7", "8"]
 end
 
-function convert_response_test()
+@testset "Convert" begin
     @test convert_response(Dict{AbstractString, AbstractString}, ["1","2","3","4"]) == Dict("1" => "2", "3" => "4")
     @test convert_response(Dict{AbstractString, AbstractString}, []) == Dict()
     @test_approx_eq convert_response(Float64, "12.3") 12.3
@@ -30,7 +28,3 @@ function convert_response_test()
     @test convert_response(Bool, 1)
     @test !convert_response(Bool, 0)
 end
-
-flatten_test()
-flatten_command_test()
-convert_response_test()

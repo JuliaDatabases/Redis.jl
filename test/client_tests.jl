@@ -27,4 +27,4 @@ end
     @test !convert_response(Bool, "f")
     @test convert_response(Bool, 1)
     @test !convert_response(Bool, 0)
-end
+end 

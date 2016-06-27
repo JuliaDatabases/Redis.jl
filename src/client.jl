@@ -73,7 +73,7 @@ function convert_response{T<:Number}(::Type{Nullable{T}}, response)
    elseif issubtype(typeof(response),T)
         Nullable{T}(response)
     else
-       tryparse(T, response)
+       response
     end
 end
 

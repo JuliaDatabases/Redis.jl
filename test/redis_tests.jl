@@ -1,9 +1,3 @@
-#=
-A note on coverage: since the Redis package relies heavily on macro definitions, the coverage
-results for the commands.jl file are inaccurate: many of the macro-generated commands find their
-line counts in the macro `redisfunction` and the method `send_command`, both in client.jl.
-=#
-
 conn = RedisConnection()
 
 flushall(conn)
@@ -298,7 +292,7 @@ end
     @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
     @test zrevrank(conn, testkey, "e") == Nullable(5)
     @test isnull(zrevrank(conn, "ordered_set", "non_existent_member"))
-    @test zscore(conn, testkey, "e") == Nullable(5.0)
+    @test zscore(conn, testkey, "e") == Nullable("5")
     @test isnull(zscore(conn, "ordered_set", "non_existent_member"))
     del(conn, testkey)
 

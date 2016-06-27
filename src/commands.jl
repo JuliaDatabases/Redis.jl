@@ -160,7 +160,9 @@ resorting to the use of `Dict`, which cannot be used in the case where all entri
 @redisfunction "zrevrange" OrderedSet{AbstractString} key start finish options...
 @redisfunction "zrevrangebyscore" OrderedSet{AbstractString} key start finish options...
 @redisfunction "zrevrank" Nullable{Integer} key member
-@redisfunction "zscore" Nullable{Float64} key member
+# ZCORE returns a Bulk string reply: the score of member (a double precision floating point
+# number), represented as string.
+@redisfunction "zscore" Nullable{AbstractString} key member
 @redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)

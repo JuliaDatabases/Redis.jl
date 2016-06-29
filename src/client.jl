@@ -70,7 +70,7 @@ end
 function convert_response{T<:Number}(::Type{Nullable{T}}, response)
     if response == nothing
        Nullable{T}()
-   elseif issubtype(typeof(response),T)
+   elseif issubtype(typeof(response), T)
         Nullable{T}(response)
     else
        response

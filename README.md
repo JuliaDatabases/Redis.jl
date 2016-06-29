@@ -165,8 +165,11 @@ Actual API usage can be found in test/redis_tests.jl.
 
 ### Redis Commands returning 'NIL'
 
-The following methods return a `Nullable{T}(value)`.  As per the Julia `Nullable`s interface,
-if no value exists then `isnull(result)` will return `true`, and `get(result)` will throw a `NullException`.
+The following methods return a `Nullable{T}(value)` corresponding to a Redis 'NIL'.
+
+#### Strings
+* `get(conn, "non_existent_key")`
+* `mget(conn, "non_existent_key1", "non_existent_key2", "non_existent_key3")`
 
 #### Lists
 * `lindex(conn, "non_existent_list", 1)`

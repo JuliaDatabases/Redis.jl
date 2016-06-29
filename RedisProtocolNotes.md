@@ -62,17 +62,7 @@ _Note_: Julia this would be a Nullable{T}, where T is an `Integer` or `AbstractS
 * `*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n` an __Array__ of 2 __Bulk Strings__
 * `*0\r\n` is an empty Array
 * Arrays can contain mixed types
-* `*-1\r\n` is a __Null Array__, and is an alternative way to specify a __Null__ value
-* client library API should return a null object and not an empty __Array__ when Redis replies with a __Null Array__. This is necessary to distinguish between an empty list and a different condition (for instance the timeout condition of the BLPOP command).
-* Arrays of arrays are possible
 * Single elements of an __Array__ may be __Null__: e.g., SORT command when used with the GET pattern option when the specified key is missing
 
-#### RedisType Notes
-
-__Some initial thoughts, pre-refactor__: it would appear that in order to improve type stability and performance, consistency with the Redis spec, and enable more features, we can leverage Julia's type system.  Instead of parsing lines through a switch statement, which is the current pattern found in parser.jl, and returning some form of `Any`, we could create a (parametrized) `RedisReply`, atomic subtypes `RedisInteger`, `RedisString`, `RedisNil`, etc...,  and respective parametrized `RedisArrays`/ `RedisContainers`. Parsing would be handled by the respective constructors.
-
-These types would then be used when specifying the response type expected for a given command in the commands.jl file.  I believe this would improve a Julia program's downstream handling of responses by making types known from the get-go. We could also improve the user experience when handling the much maligned 'NIL'.
-
-Now that a more comprehensive testing suite is available, it may be easier to implement this next stage of the package's refactor.
 
 __TODO__:  next section "Sending Commands to Redis"

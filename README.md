@@ -1,5 +1,10 @@
 # Redis.jl
 
+
+[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl) [![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)  [![DataFrames](http://pkg.julialang.org/badges/Redis_0.4.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.4) [![DataFrames](http://pkg.julialang.org/badges/Redis_0.5.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.5)
+
+
+
 Redis.jl is a fully-featured Redis client for the Julia programming language. The implementation is an attempt at an easy to understand, minimalistic API that mirrors actual Redis commands as closely as possible.
 
 ## Basics
@@ -154,9 +159,34 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 
 `SentinelConnection` is also `SubscribableConnection`, allowing the user to build a `SubscriptionConnection` for monitoring cluster health through Sentinel messages. See [the Redis Sentinel documentation](http://redis.io/topics/sentinel) for more information.
 
-## Notes
+### Notes
 
 Actual API usage can be found in test/redis_tests.jl.
 
+### Redis Commands returning 'NIL'
 
-[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl)
+The following methods return a `Nullable{T}(value)` corresponding to a Redis 'NIL'.
+
+#### Strings
+* `get(conn, "non_existent_key")`
+* `mget(conn, "non_existent_key1", "non_existent_key2", "non_existent_key3")`
+
+#### Lists
+* `lindex(conn, "non_existent_list", 1)`
+* `lindex(conn, "one_element_list", 2)`
+* `lpop(conn, "non_existent_list")`
+* `rpop(conn, "non_existent_list")`
+* `rpoplpush(conn, "non_existent_list", "some_list")`
+
+#### Sets
+* `spop(conn, "empty_set")`
+* `srandmember(conn, "empty_set")`     
+
+####Sorted Sets
+* `zrank(conn, "ordered_set", "non_existent_member")`
+* `zrevrank(conn, "ordered_set", "non_existent_member")`
+* `zscore(conn, "ordered_set", "non_existent_member")`
+
+#### Hashes
+* `hget(conn, "some_hash", "non_existent_field")`
+* `hmget(conn, "some_hash", "nofield1", "nofield2")`

@@ -1,3 +1,5 @@
+services:
+  - redis-server
 language: cpp
 compiler:
   - clang
@@ -14,4 +16,6 @@ before_install:
   - sudo apt-get install libpcre3-dev julia -y
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 script:
-  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("Redis")'
+  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.add("DataStructures"); Pkg.add("BaseTestNext"); Pkg.test("Redis", coverage=true)'
+after_success:
+  - julia -e 'cd(Pkg.dir("Redis")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'

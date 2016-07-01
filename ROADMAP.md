@@ -1,11 +1,6 @@
 Redis is an amazing tool, and there is a lot that can be done with it.  This roadmap is about some of the features that I would like to include
 in Julia's Redis module. The inspiration comes from my experience deploying Redis in a number of production projects and other Redis packages I have used extensively like Node's Ioredis. The order is random, and there is some overlap.
 
-    * Stream scanning (in process)
-        - in order to simplify coding of key scans
-        - any time you retrieve a data structure that contains a lot of elements, you could end up blocking
-        - Asynchronous processing
-        - Events integration
     * Native parsing using libhiredis (in process)
         - provide an optional high speed reply parser
     * Extend testing and benchmarking

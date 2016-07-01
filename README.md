@@ -1,7 +1,7 @@
 # Redis.jl
 
 
-[![Build Status](https://travis-ci.org/jkaye2012/Redis.jl.svg?branch=master)](https://travis-ci.org/jkaye2012/Redis.jl) [![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)  [![DataFrames](http://pkg.julialang.org/badges/Redis_0.4.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.4) [![DataFrames](http://pkg.julialang.org/badges/Redis_0.5.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.5)
+[![Build Status](https://travis-ci.org/merl-dev/Redis.jl.svg?branch=master)](https://travis-ci.org/merl-dev/Redis.jl) [![Coverage Status](https://coveralls.io/repos/github/merl-dev/Redis.jl/badge.svg?branch=master)](https://coveralls.io/github/merl-dev/Redis.jl?branch=master)  [![DataFrames](http://pkg.julialang.org/badges/Redis_0.4.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.4) [![DataFrames](http://pkg.julialang.org/badges/Redis_0.5.svg)](http://pkg.julialang.org/?pkg=Redis&ver=0.5)
 
 
 
@@ -158,6 +158,40 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 ```
 
 `SentinelConnection` is also `SubscribableConnection`, allowing the user to build a `SubscriptionConnection` for monitoring cluster health through Sentinel messages. See [the Redis Sentinel documentation](http://redis.io/topics/sentinel) for more information.
+
+## Streaming Scanners
+
+In order to simplify use of the Redis scan commands, SCAN (keys), SSCAN (sets), ZSCAN (ordered sets), and HSCAN (hashes), a streaming interface is provided. To initialize
+a scan use the appropriate constructor:
+
+`KeyScanner(conn::RedisConnection, match::AbstractString, count::Int)`
+
+`SetScanner(conn::RedisConnection, key::AbstractString, match::AbstractString, count::Int)`
+
+`OrderedSetScanner(conn::RedisConnection, key::AbstractString, match::AbstractString, count::Int)`
+
+`HashScanner(conn::RedisConnection, key::AbstractString, match::AbstractString, count::Int)`
+
+`match` is used for pattern matching, and defaults to "\*",  while `count` specifies the number of items returned per iteration and defaults to 1.
+
+Two methods are provided for scanning:
+
+`next!(ss::StreamScanner, count)` retrieves `count` elements as an `Array` or `Dict`.  `count` defaults to the value
+used in the constructor, but can be modified per request. __As per the Redis spec, each call to `next!` may return one or
+more elements that were retrieved in a previous call.__
+
+`collect(ss::StreamScanner)` will keep scanning until all the elements have bee retrieved.
+
+Note the following caveats from the Redis documentation at http://redis.io/commands/scan:
+
+    * The SCAN family of commands only offer limited guarantees about the returned elements since the collection
+    that we incrementally iterate can change during the iteration process.
+
+    * Basically with COUNT the user specified _the amount of work that should be done at every call in order to
+      retrieve elements from the collection_. This is __just a hint__ for the implementation, however generally
+      speaking this is what you could expect most of the times from the implementation.
+
+__Please refer to the Redis documentation for more details.__
 
 ### Notes
 

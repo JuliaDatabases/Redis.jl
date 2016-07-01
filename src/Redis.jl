@@ -63,6 +63,5 @@ include("connection.jl")
 include("client.jl")
 include("parser.jl")
 include("commands.jl")
-include("hiredisreader.jl")
 
 end

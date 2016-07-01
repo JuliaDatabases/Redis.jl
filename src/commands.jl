@@ -32,11 +32,11 @@ end
 @redisfunction "scan" Tuple{AbstractString, Set{AbstractString}} cursor::Integer options...
 @redisfunction "sort" Array{AbstractString, 1} key options...
 @redisfunction "ttl" Integer key
-function keytype(conn::RedisConnection, key)
+function Base.keytype(conn::RedisConnection, key)
     response = execute_command(conn, flatten_command("type", key))
     convert_response(AbstractString, response)
 end
-function keytype(conn::TransactionConnection, key)
+function Base.keytype(conn::TransactionConnection, key)
     execute_command(conn, flatten_command("type", key))
 end
 

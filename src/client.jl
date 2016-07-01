@@ -110,6 +110,10 @@ function convert_response{T<:AbstractString}(::Type{Array{Nullable{T}, 1}}, resp
     end
 end
 
+function convert_response{T}(::Type{Tuple{AbstractString, T}}, response)
+    response[1], convert_response(T, response[2])
+end
+
 function open_transaction(conn::RedisConnection)
     t = TransactionConnection(conn)
     multi(t)

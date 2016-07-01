@@ -317,7 +317,20 @@ end
 end
 
 @testset "Scan" begin
-
+    set(conn, testkey, s1)
+    set(conn, testkey2, s2)
+    set(conn, testkey3, s3)
+    @test scan(conn, 0) == ("0", Set([testkey, testkey2, testkey3]))
+    response = scan(conn, 0, "MATCH", testkey[1:3]*"*", "COUNT", 1)
+    @test response[1] != "0"    # cursor should indicate more items available
+    @test issubset(response[2], Set([testkey, testkey2, testkey3]))
+    del(conn, testkey, testkey2, testkey3)
+    sadd(conn, testkey, Set([s1, s2, s3]))
+    @test sscan(conn, testkey, 0) == ("0", Set([s1, s2, s3]))
+    del(conn, testkey)
+    hmset(conn, testkey, Dict("f1"=>s1, "f2"=>s2, "f3"=>s3))
+    @test hscan(conn, testkey, 0) == ("0", Dict{AbstractString,AbstractString}("f1"=>s1,"f2"=>s2,"f3"=>s3))
+    del(conn, testkey)
 end
 
 @testset "Scripting" begin

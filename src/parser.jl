@@ -62,8 +62,6 @@ function parseline(l::AbstractString, s::TCPSocket)
     end
 end
 
-
-
 """
 Formatting of outgoing commands to the Redis server
 """

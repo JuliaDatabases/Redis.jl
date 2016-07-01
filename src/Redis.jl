@@ -1,4 +1,13 @@
+using BinDeps
+
 module Redis
+
+if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
+    include("../deps/deps.jl")
+else
+    Pkg.build("Redis")
+end
+
 using Base.Dates
 
 import Base.get, Base.keys, Base.time
@@ -62,5 +71,6 @@ include("connection.jl")
 include("client.jl")
 include("parser.jl")
 include("commands.jl")
+include("hiredisreader.jl")
 
 end

@@ -15,7 +15,10 @@ end
 @redisfunction "exists" Bool key
 @redisfunction "expire" Bool key seconds
 @redisfunction "expireat" Bool key timestamp
+
+# CAUTION:  this command will block until all keys have been returned
 @redisfunction "keys" Set{AbstractString} pattern
+
 @redisfunction "migrate" Bool host port key destinationdb timeout
 @redisfunction "move" Bool key db
 @redisfunction "persist" Bool key
@@ -26,7 +29,7 @@ end
 @redisfunction "rename" AbstractString key newkey
 @redisfunction "renamenx" Bool key newkey
 @redisfunction "restore" Bool key ttl serializedvalue
-@redisfunction "scan" Array{AbstractString, 1} cursor::Integer options...
+@redisfunction "scan" Tuple{AbstractString, Set{AbstractString}} cursor::Integer options...
 @redisfunction "sort" Array{AbstractString, 1} key options...
 @redisfunction "ttl" Integer key
 function keytype(conn::RedisConnection, key)
@@ -83,7 +86,7 @@ end
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
 @redisfunction "hvals" Array{AbstractString, 1} key
-@redisfunction "hscan" Array key cursor::Integer options...
+@redisfunction "hscan" Tuple{AbstractString, Dict{AbstractString, AbstractString}} key cursor::Integer options...
 
 # List commands
 @redisfunction "blpop" Array{AbstractString, 1} keys timeout
@@ -112,6 +115,8 @@ end
 @redisfunction "sinter" Set{AbstractString} key keys...
 @redisfunction "sinterstore" Integer destination key keys...
 @redisfunction "sismember" Bool key member
+
+# CAUTION:  this command will block until all keys have been returned
 @redisfunction "smembers" Set{AbstractString} key
 @redisfunction "smove" Bool source destination member
 @redisfunction "spop" Nullable{AbstractString} key
@@ -120,7 +125,7 @@ end
 @redisfunction "srem" Integer key member members...
 @redisfunction "sunion" Set{AbstractString} key keys...
 @redisfunction "sunionstore" Integer destination key keys...
-@redisfunction "sscan" Set{AbstractString} key cursor::Integer options...
+@redisfunction "sscan" Tuple{AbstractString, Set{AbstractString}} key cursor::Integer options...
 
 # Sorted set commands
 #=
@@ -163,7 +168,7 @@ resorting to the use of `Dict`, which cannot be used in the case where all entri
 # ZCORE returns a Bulk string reply: the score of member (a double precision floating point
 # number), represented as string.
 @redisfunction "zscore" Nullable{AbstractString} key member
-@redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
+@redisfunction "zscan" Tuple{AbstractString, OrderedSet{AbstractString}} key cursor::Integer options...
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)
     length(keys) > 0 || throw(ClientException("Must supply at least one key"))

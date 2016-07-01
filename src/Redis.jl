@@ -1,12 +1,4 @@
-using BinDeps
-
 module Redis
-
-if isfile(joinpath(dirname(@__FILE__),"..","deps","deps.jl"))
-    include("../deps/deps.jl")
-else
-    Pkg.build("Redis")
-end
 
 using Base.Dates
 

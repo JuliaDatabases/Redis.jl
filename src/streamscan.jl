@@ -10,11 +10,6 @@ StreamScanner is an abstract type, with 4 concrete implementations based on the 
 * `OrderedSetScanner`   zset scans
 * `HashScanner`         hash field scans
 
-
-
-retrieves the next `OrderedSetScanner.count` items and returns a `Set` of Tuples(Float64, AbstractString)
-where the first element represents the score and the second the value
-
 # Notes
 from http://redis.io/commands/scan:
     * The SCAN family of commands only offer limited guarantees about the returned elements since the collection

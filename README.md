@@ -161,8 +161,7 @@ sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master in
 
 ## Streaming Scanners
 
-In order to simplify use of the Redis scan commands, SCAN (keys), SSCAN (sets), ZSCAN (ordered sets), and HSCAN (hashes), a streaming interface is provided. To initialize
-a scan use the appropriate constructor:
+In order to simplify use of the Redis scan commands, SCAN (keys), SSCAN (sets), ZSCAN (ordered sets), and HSCAN (hashes), a streaming interface is provided. To initialize a scan use the appropriate constructor:
 
 `KeyScanner(conn::RedisConnection, match::AbstractString, count::Int)`
 
@@ -181,6 +180,9 @@ used in the constructor, but can be modified per request. __As per the Redis spe
 more elements that were retrieved in a previous call.__
 
 `collect(ss::StreamScanner)` will keep scanning until all the elements have bee retrieved.
+
+`collectAsync!(ss::StreamScanner, coll::<Collection Type>; cb::Function==nullcb)` enables asynchronous execution of a scan
+accumulating results in a predefined collection object, with an optional callback parameter that defaults to do nothing.  The callback function should take one parameter, the result collection and do something appropriate for that collection type.
 
 Note the following caveats from the Redis documentation at http://redis.io/commands/scan:
 

@@ -353,6 +353,10 @@ end
         ks = KeyScanner(conn, "*", 1)
         @test issubset(next!(ks), [testkey, testkey2, testkey3])
         @test Set(collect(ks)) == Set([testkey, testkey2, testkey3])
+        arr = Vector{AbstractString}()
+        collectAsync!(ks, arr)
+        sleep(1)
+        @test Set(arr) == Set([testkey, testkey2, testkey3])
         del(conn, testkey, testkey2, testkey3)
     end
     @testset "sets" begin
@@ -360,13 +364,21 @@ end
         ks = SetScanner(conn, testkey, "*", 1)
         @test issubset(next!(ks), [s1, s2, s3])
         @test Set(collect(ks)) == Set([s1, s2, s3])
+        arr = Vector{AbstractString}()
+        collectAsync!(ks, arr)
+        sleep(1)
+        @test Set(arr) == Set([s1, s2, s3])
         del(conn, testkey)
     end
     @testset "ordered sets" begin
         zadd(conn, testkey, (1., s1), (2., s2), (3., s3))
         ks = OrderedSetScanner(conn, testkey, "*", 1)
         @test issubset(next!(ks), [(1., s1), (2., s2), (3., s3)])
-        @test Set(collect(ks)) == Set([(1., s1), (2., s2), (3., s3)])
+        @test collect(ks) == [(1., s1), (2., s2), (3., s3)]
+        arr = Vector{Tuple{Float64, AbstractString}}()
+        collectAsync!(ks, arr)
+        sleep(1)
+        @test arr == [(1., s1), (2., s2), (3., s3)]
         del(conn, testkey)
     end
     @testset "hashes" begin
@@ -374,7 +386,11 @@ end
         hmset(conn, testkey, dict)
         ks = HashScanner(conn, testkey, "*", 1)
         @test issubset(Set(next!(ks)), Set(dict))
-        @test Set(collect(ks)) == Set(dict)
+        @test collect(ks) == dict
+        dict2 = Dict{AbstractString, AbstractString}()
+        collectAsync!(ks, dict2)
+        sleep(1)
+        @test dict2 == dict
         del(conn, testkey)
     end
 end

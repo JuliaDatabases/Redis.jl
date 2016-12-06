@@ -70,7 +70,7 @@ Formatting of outgoing commands to the Redis server
 function pack_command(command)
     packed_command = "*$(length(command))\r\n"
     for token in command
-        ltoken = ifelse(typeof(token) <: Number, length(string(token)), length(token))
+        ltoken = ifelse(typeof(token) <: Number, length(string(token)), length(token.data))
         packed_command = string(packed_command, "\$$(ltoken)\r\n", token, "\r\n")
     end
     packed_command

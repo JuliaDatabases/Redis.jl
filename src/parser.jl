@@ -22,7 +22,7 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
             "Bulk string read error: expected $len bytes; received $(length(b))"
         ))
     else
-        return bytestring(b[1:end-2])
+        return String(b[1:end-2])
     end
 end
 
@@ -61,7 +61,6 @@ function parseline(l::AbstractString, s::TCPSocket)
         parse_error(reply_token)
     end
 end
-
 
 
 """

@@ -1,4 +1,4 @@
-abstract RedisException <: Exception
+abstract type RedisException<:Exception end
 
 # Thrown if the client is unable to establish a connection to the server
 immutable ConnectionException <: RedisException

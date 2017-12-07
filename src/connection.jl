@@ -1,7 +1,7 @@
 import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
 
-abstract type RedisConnectionBase end
-abstract type SubscribableConnection<:RedisConnectionBase end
+abstract RedisConnectionBase
+abstract SubscribableConnection<:RedisConnectionBase 
 
 immutable RedisConnection <: SubscribableConnection
     host::AbstractString

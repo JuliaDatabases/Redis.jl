@@ -1,7 +1,7 @@
-import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen
+import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
 
-abstract RedisConnectionBase
-abstract SubscribableConnection <: RedisConnectionBase
+abstract type RedisConnectionBase end
+abstract type SubscribableConnection<:RedisConnectionBase end
 
 immutable RedisConnection <: SubscribableConnection
     host::AbstractString
@@ -111,7 +111,7 @@ function disconnect(conn::RedisConnectionBase)
 end
 
 function is_connected(conn::RedisConnectionBase)
-    conn.socket.status == StatusActive || conn.socket.status == StatusOpen
+    conn.socket.status == StatusActive || conn.socket.status == StatusOpen || conn.socket.status == StatusPaused
 end
 
 function send_command(conn::RedisConnectionBase, command::AbstractString)

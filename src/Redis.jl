@@ -59,8 +59,8 @@ export REDIS_PERSISTENT_KEY, REDIS_EXPIRED_KEY
 
 include("exceptions.jl")
 include("connection.jl")
-include("client.jl")
 include("parser.jl")
+include("client.jl")
 include("commands.jl")
 
 end

@@ -21,10 +21,10 @@ end
 @testset "Convert" begin
     @test convert_response(Dict{AbstractString, AbstractString}, ["1","2","3","4"]) == Dict("1" => "2", "3" => "4")
     @test convert_response(Dict{AbstractString, AbstractString}, []) == Dict()
-    @test_approx_eq convert_response(Float64, "12.3") 12.3
-    @test_approx_eq convert_response(Float64, 10) 10.0
+    @test convert_response(Float64, "12.3") ≈ 12.3
+    @test convert_response(Float64, 10) ≈ 10.
     @test convert_response(Bool, "OK")
     @test !convert_response(Bool, "f")
     @test convert_response(Bool, 1)
     @test !convert_response(Bool, 0)
-end 
+end

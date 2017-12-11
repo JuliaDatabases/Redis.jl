@@ -4,6 +4,9 @@ language: julia
 julia:
   - 0.6
   - nightly
+matrix:
+  allow_failures:
+   - julia: nightly
 notifications:
   email: false
 #script: # use the default script setting which is equivalent to the following

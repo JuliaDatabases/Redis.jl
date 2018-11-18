@@ -170,7 +170,7 @@ function _build_store_internal(destination, numkeys, keys, weights, aggregate, c
     suffix = []
     if length(weights) > 0
         suffix = map(string, weights)
-        unshift!(suffix, "weights")
+        pushfirst!(suffix, "weights")
     end
     if aggregate != Aggregate.NotSet
         push!(suffix, "aggregate")
@@ -282,7 +282,7 @@ end
 @redisfunction "publish" Integer channel message
 
 function _subscribe(conn::SubscriptionConnection, channels::Array)
-    execute_command_without_reply(conn, unshift!(channels, "subscribe"))
+    execute_command_without_reply(conn, pushfirst!(channels, "subscribe"))
 end
 
 function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
@@ -301,11 +301,11 @@ function unsubscribe(conn::SubscriptionConnection, channels...)
     for channel in channels
         delete!(conn.callbacks, channel)
     end
-    execute_command(conn, unshift!(channels, "unsubscribe"))
+    execute_command(conn, pushfirst!(channels, "unsubscribe"))
 end
 
 function _psubscribe(conn::SubscriptionConnection, patterns::Array)
-    execute_command_without_reply(conn, unshift!(patterns, "psubscribe"))
+    execute_command_without_reply(conn, pushfirst!(patterns, "psubscribe"))
 end
 
 function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
@@ -324,7 +324,7 @@ function punsubscribe(conn::SubscriptionConnection, patterns...)
     for pattern in patterns
         delete!(conn.pcallbacks, pattern)
     end
-    execute_command(conn, unshift!(patterns, "punsubscribe"))
+    execute_command(conn, pushfirst!(patterns, "punsubscribe"))
 end
 
 #Need a specialized version of execute to keep the connection in the transaction state

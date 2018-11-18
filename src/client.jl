@@ -168,7 +168,7 @@ macro redisfunction(command::AbstractString, ret_type, args...)
     if length(args) > 0
         return quote
             function $(func_name)(conn::RedisConnection, $(args...))
-                @show response = execute_command(conn, flatten_command($(command...), $(args...)))
+                response = execute_command(conn, flatten_command($(command...), $(args...)))
                 convert_response($ret_type, response)
             end
             function $(func_name)(conn::TransactionConnection, $(args...))

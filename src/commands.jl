@@ -44,7 +44,7 @@ end
 @redisfunction "bitpos" Integer key bit options...
 @redisfunction "decr" Integer key
 @redisfunction "decrby" Integer key decrement
-@redisfunction "get" Union{AbstractString, Nothing} key
+@redisfunction "get" Union{String, Nothing} key
 @redisfunction "getbit" Integer key offset
 @redisfunction "getrange" AbstractString key start finish
 @redisfunction "getset" AbstractString key value

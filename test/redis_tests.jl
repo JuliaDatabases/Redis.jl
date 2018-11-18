@@ -32,7 +32,7 @@ const REDIS_EXPIRED_KEY =  -2
     set(conn, testkey2, s2)
     set(conn, testkey3, s3)
     # RANDOMKEY can return 'NIL', so it returns Union{Nothing, T}.  KEYS * always returns empty Set when Redis is empty
-    @test get(randomkey(conn)) in keys(conn, "*")
+    @test randomkey(conn) in keys(conn, "*")
     @test getrange(conn, testkey, 0, 3) == s1[1:4]
 
     @test set(conn, testkey, 2)
@@ -143,12 +143,12 @@ end
     @test lpush(conn, testkey, s1, s2, "a", "a", s3, s4) == 6
     @test lpop(conn, testkey) == s4
     @test rpop(conn, testkey) == s1
-    @test isnull(lpop(conn, "non_existent_list"))
-    @test isnull(rpop(conn, "non_existent_list"))
+    @test lpop(conn, "non_existent_list") == nothing
+    @test rpop(conn, "non_existent_list") == nothing
     @test llen(conn, testkey) == 4
-    @test isnull(lindex(conn, "non_existent_list", 1))
+    @test lindex(conn, "non_existent_list", 1) == nothing
     @test lindex(conn, testkey, 0) == s3
-    @test isnull(lindex(conn, testkey, 10))
+    @test lindex(conn, testkey, 10) == nothing
     @test lrem(conn, testkey, 0, "a") == 2
     @test lset(conn, testkey, 0, s5) == "OK"
     @test lindex(conn, testkey, 0) == s5
@@ -167,7 +167,7 @@ end
     for i in 1:3
         @test rpoplpush(conn, testkey, testkey2) == listvals[4-i]  # rpop
     end
-    @test isnull(rpoplpush(conn, testkey, testkey2))
+    @test rpoplpush(conn, testkey, testkey2) == nothing
     @test llen(conn, testkey) == 0
     @test llen(conn, testkey2) == 3
     @test lrange(conn, testkey2, 0, -1) == listvals
@@ -190,11 +190,11 @@ end
     @test hget(conn, testhash, 1) == "2"
     @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
 
-    @test isnull(hget(conn, testhash, "non_existent_field"))
+    @test hget(conn, testhash, "non_existent_field") == nothing
     @test hmget(conn, testhash, 1, 3) == ["2", "4"]
     a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
-    @test isnull(a[1])
-    @test isnull(a[2])
+    @test a[1] == nothing
+    @test a[2] == nothing
 
     @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
     @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])

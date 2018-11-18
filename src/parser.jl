@@ -16,7 +16,7 @@ end
 parse_error(l::AbstractString) = throw(ServerException(l))
 
 function parse_bulk_string(s::TCPSocket, slen::Int)
-    b = read(s, UInt8, slen+2) # add crlf
+    b = read(s, slen+2) # add crlf
     if length(b) != slen + 2
         throw(ProtocolException(
             "Bulk string read error: expected $len bytes; received $(length(b))"
@@ -46,14 +46,14 @@ function parseline(l::AbstractString, s::TCPSocket)
     elseif reply_type == '$'
         slen = parse(Int, reply_token)
         if slen == -1
-            Nullable{AbstractString}()
+            nothing
         else
             parse_bulk_string(s, slen)
         end
     elseif reply_type == '*'
         slen = parse(Int, reply_token)
         if slen == -1
-            Nullable{AbstractString}()
+            nothing
         else
             parse_array(s, slen)
         end
@@ -91,7 +91,7 @@ baremodule SubscriptionMessageType
     const Other = 2
 end
 
-immutable SubscriptionMessage
+struct SubscriptionMessage
     message_type
     channel::AbstractString
     message::AbstractString

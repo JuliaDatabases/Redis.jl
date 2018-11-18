@@ -1,12 +1,12 @@
 abstract type RedisException<:Exception end
 
 # Thrown if the client is unable to establish a connection to the server
-immutable ConnectionException <: RedisException
+struct ConnectionException <: RedisException
     message::AbstractString
 end
 
 # Thrown if the response from the server doesn't conform to RESP
-immutable ProtocolException <: RedisException
+struct ProtocolException <: RedisException
     message::AbstractString
 end
 
@@ -23,12 +23,12 @@ end
 #   However, **such a feature should not be considered vital as it is rarely useful**,
 #   and a limited client implementation may simply return a generic error condition,
 #   such as false.
-immutable ServerException <: RedisException
+struct ServerException <: RedisException
     # error_prefix::AbstractString
     message::AbstractString
 end
 
 # Thrown if an error originates from the client
-immutable ClientException <: RedisException
+struct ClientException <: RedisException
     message::AbstractString
 end

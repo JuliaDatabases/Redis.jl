@@ -22,7 +22,7 @@ end
 @redisfunction "pexpire" Bool key milliseconds
 @redisfunction "pexpireat" Bool key millisecondstimestamp
 @redisfunction "pttl" Integer key
-@redisfunction "randomkey" Nullable{AbstractString}
+@redisfunction "randomkey" Union{AbstractString, Nothing}
 @redisfunction "rename" AbstractString key newkey
 @redisfunction "renamenx" Bool key newkey
 @redisfunction "restore" Bool key ttl serializedvalue
@@ -44,7 +44,7 @@ end
 @redisfunction "bitpos" Integer key bit options...
 @redisfunction "decr" Integer key
 @redisfunction "decrby" Integer key decrement
-@redisfunction "get" Nullable{AbstractString} key
+@redisfunction "get" Union{AbstractString, Nothing} key
 @redisfunction "getbit" Integer key offset
 @redisfunction "getrange" AbstractString key start finish
 @redisfunction "getset" AbstractString key value
@@ -54,7 +54,7 @@ end
 # Bulk string reply: the value of key after the increment,
 # as per http://redis.io/commands/incrbyfloat
 @redisfunction "incrbyfloat" AbstractString key increment::Float64
-@redisfunction "mget" Array{Nullable{AbstractString}, 1} key keys...
+@redisfunction "mget" Array{Union{AbstractString, Nothing}, 1} key keys...
 @redisfunction "mset" Bool keyvalues
 @redisfunction "msetnx" Bool keyvalues
 @redisfunction "psetex" AbstractString key milliseconds value
@@ -68,7 +68,7 @@ end
 # Hash commands
 @redisfunction "hdel" Integer key field fields...
 @redisfunction "hexists" Bool key field
-@redisfunction "hget" Nullable{AbstractString} key field
+@redisfunction "hget" Union{AbstractString, Nothing} key field
 @redisfunction "hgetall" Dict{AbstractString, AbstractString} key
 @redisfunction "hincrby" Integer key field increment::Integer
 
@@ -78,7 +78,7 @@ end
 
 @redisfunction "hkeys" Array{AbstractString, 1} key
 @redisfunction "hlen" Integer key
-@redisfunction "hmget" Array{Nullable{AbstractString}, 1} key field fields...
+@redisfunction "hmget" Array{Union{AbstractString, Nothing}, 1} key field fields...
 @redisfunction "hmset" Bool key value
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
@@ -89,18 +89,18 @@ end
 @redisfunction "blpop" Array{AbstractString, 1} keys timeout
 @redisfunction "brpop" Array{AbstractString, 1} keys timeout
 @redisfunction "brpoplpush" AbstractString source destination timeout
-@redisfunction "lindex" Nullable{AbstractString} key index
+@redisfunction "lindex" Union{AbstractString, Nothing} key index
 @redisfunction "linsert" Integer key place pivot value
 @redisfunction "llen" Integer key
-@redisfunction "lpop" Nullable{AbstractString} key
+@redisfunction "lpop" Union{AbstractString, Nothing} key
 @redisfunction "lpush" Integer key value values...
 @redisfunction "lpushx" Integer key value
 @redisfunction "lrange" Array{AbstractString, 1} key start finish
 @redisfunction "lrem" Integer key count value
 @redisfunction "lset" AbstractString key index value
 @redisfunction "ltrim" AbstractString key start finish
-@redisfunction "rpop" Nullable{AbstractString} key
-@redisfunction "rpoplpush" Nullable{AbstractString} source destination
+@redisfunction "rpop" Union{AbstractString, Nothing} key
+@redisfunction "rpoplpush" Union{AbstractString, Nothing} source destination
 @redisfunction "rpush" Integer key value values...
 @redisfunction "rpushx" Integer key value
 
@@ -114,8 +114,8 @@ end
 @redisfunction "sismember" Bool key member
 @redisfunction "smembers" Set{AbstractString} key
 @redisfunction "smove" Bool source destination member
-@redisfunction "spop" Nullable{AbstractString} key
-@redisfunction "srandmember" Nullable{AbstractString} key
+@redisfunction "spop" Union{AbstractString, Nothing} key
+@redisfunction "srandmember" Union{AbstractString, Nothing} key
 @redisfunction "srandmember" Set{AbstractString} key count
 @redisfunction "srem" Integer key member members...
 @redisfunction "sunion" Set{AbstractString} key keys...
@@ -152,17 +152,17 @@ resorting to the use of `Dict`, which cannot be used in the case where all entri
 @redisfunction "zrange" OrderedSet{AbstractString} key start finish options...
 @redisfunction "zrangebylex" OrderedSet{AbstractString} key min max options...
 @redisfunction "zrangebyscore" OrderedSet{AbstractString} key min max options...
-@redisfunction "zrank" Nullable{Integer} key member
+@redisfunction "zrank" Union{Integer, Nothing} key member
 @redisfunction "zrem" Integer key member members...
 @redisfunction "zremrangebylex" Integer key min max
 @redisfunction "zremrangebyrank" Integer key start finish
 @redisfunction "zremrangebyscore" Integer key start finish
 @redisfunction "zrevrange" OrderedSet{AbstractString} key start finish options...
 @redisfunction "zrevrangebyscore" OrderedSet{AbstractString} key start finish options...
-@redisfunction "zrevrank" Nullable{Integer} key member
+@redisfunction "zrevrank" Union{Integer, Nothing} key member
 # ZCORE returns a Bulk string reply: the score of member (a double precision floating point
 # number), represented as string.
-@redisfunction "zscore" Nullable{AbstractString} key member
+@redisfunction "zscore" Union{AbstractString, Nothing} key member
 @redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)

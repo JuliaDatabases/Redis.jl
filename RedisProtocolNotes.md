@@ -55,7 +55,7 @@ _Note_:  we have "OK" and 1
 * a Null, or __Null Bulk String__ is `$-1\r\n`
 * The client library API should not return an empty string, but a nil object, when the server replies with a Null Bulk String. For example a Ruby library should return 'nil' while a C library should return NULL (or set a special flag in the reply object), and so forth
 
-_Note_: Julia this would be a Nullable{T}, where T is an `Integer` or `AbstractString`
+_Note_: Julia this would be a Union{T, Nothing}, where T is an `Integer` or `AbstractString`
 
 #### Arrays
 

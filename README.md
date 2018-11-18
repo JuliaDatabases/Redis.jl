@@ -165,7 +165,7 @@ Actual API usage can be found in test/redis_tests.jl.
 
 ### Redis Commands returning 'NIL'
 
-The following methods return a `Nullable{T}(value)` corresponding to a Redis 'NIL'.
+The following methods return a `Union{T, Nothing}(value)` corresponding to a Redis 'NIL'.
 
 #### Strings
 * `get(conn, "non_existent_key")`

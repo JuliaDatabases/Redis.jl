@@ -27,7 +27,7 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
 end
 
 function parse_array(s::TCPSocket, slen::Int)
-    a = Array{Any, 1}(slen)
+    a = Array{Any, 1}(undef, slen)
     for i = 1:slen
         l = getline(s)
         r = parseline(l, s)

@@ -297,12 +297,17 @@ function subscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Func
     _subscribe(conn, collect(keys(subs)))
 end
 
+# REF: https://github.com/stejin/Redis.jl/commit/eace3a1ace7b464ba1e5ea074b27e6e8f652820e
 function unsubscribe(conn::SubscriptionConnection, channels...)
-    for channel in channels
-        delete!(conn.callbacks, channel)
-    end
-    execute_command(conn, pushfirst!(channels, "unsubscribe"))
+    delete!(conn.callbacks, channel)
+    execute_command_without_reply(conn, unshift!([channel], "unsubscribe"))
 end
+# function unsubscribe(conn::SubscriptionConnection, channels...)
+#     for channel in channels
+#         delete!(conn.callbacks, channel)
+#     end
+#     execute_command(conn, pushfirst!(channels, "unsubscribe"))
+# end
 
 function _psubscribe(conn::SubscriptionConnection, patterns::Array)
     execute_command_without_reply(conn, pushfirst!(patterns, "psubscribe"))

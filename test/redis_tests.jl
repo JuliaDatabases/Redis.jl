@@ -184,32 +184,32 @@ end
 end
 
 @testset "Hashes" begin
-@test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
-@test hexists(conn, testhash, 1) == true
-@test hexists(conn, testhash, "1") == true
-@test hget(conn, testhash, 1) == "2"
-@test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
+    @test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
+    @test hexists(conn, testhash, 1) == true
+    @test hexists(conn, testhash, "1") == true
+    @test hget(conn, testhash, 1) == "2"
+    @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
 
-@test hget(conn, testhash, "non_existent_field") == nothing
-@test hmget(conn, testhash, 1, 3) == ["2", "4"]
-a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
-@test a[1] == nothing
-@test a[2] == nothing
+    @test hget(conn, testhash, "non_existent_field") == nothing
+    @test hmget(conn, testhash, 1, 3) == ["2", "4"]
+    a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
+    @test a[1] == nothing
+    @test a[2] == nothing
 
-@test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
-@test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
-@test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
-@test hget(conn, testhash, "3") == "10" # but still sets it to the new value
-@test hset(conn, testhash, "10", "10") == true # new field hset returns true
-@test hget(conn, testhash, "10") == "10" # correctly set new field
-@test hsetnx(conn, testhash, "1", "10") == false # field exists
-@test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
-@test hlen(conn, testhash) == 5  # testhash now has 5 fields
+    @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
+    @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
+    @test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
+    @test hget(conn, testhash, "3") == "10" # but still sets it to the new value
+    @test hset(conn, testhash, "10", "10") == true # new field hset returns true
+    @test hget(conn, testhash, "10") == "10" # correctly set new field
+    @test hsetnx(conn, testhash, "1", "10") == false # field exists
+    @test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
+    @test hlen(conn, testhash) == 5  # testhash now has 5 fields
 
-@test hincrby(conn, testhash, "1", 1) == 3
-@test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
+    @test hincrby(conn, testhash, "1", 1) == 3
+    @test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
 
-del(conn, testhash)
+    del(conn, testhash)
 end
 
 @testset "Sets" begin
@@ -229,13 +229,13 @@ end
     @test sinterstore(conn, testkey3, testkey, testkey2) == 1
     # only the following method returns 'nil' if the Set does not exist
     @test srandmember(conn, testkey3) in Set([s1, s2, s3])
-    @test isnull(srandmember(conn, "empty_set"))
+    @test srandmember(conn, "empty_set") == nothing
     # this method returns an emtpty Set if the the Set is empty
     @test issubset(srandmember(conn, testkey2, 2), Set([s1, s2, s3]))
     @test srandmember(conn, "non_existent_set", 10) == Set{AbstractString}()
     @test sdiff(conn, testkey, testkey2) == Set([s1])
     @test spop(conn, testkey) in Set([s1, s2, s3])
-    @test isnull(spop(conn, "empty_set"))
+    @test spop(conn, "empty_set") == nothing
     del(conn, testkey, testkey2, testkey3)
 end
 
@@ -249,7 +249,7 @@ end
     @test zcount(conn, testkey, 0, 1) == 2   # range as int
     @test zcount(conn, testkey, "-inf", "+inf") == 3 # range as string
     @test zincrby(conn, testkey, 1, s1) == "2"
-    @test float(zincrby(conn, testkey, 1.2, s1)) == 3.2
+    @test parse(Float64, zincrby(conn, testkey, 1.2, s1)) == 3.2
     @test zrem(conn, testkey, s1, s2) == 2
     del(conn, testkey)
 
@@ -277,7 +277,7 @@ end
     @test zrank(conn, testkey, "d") == 3 # redis arrays 0-base
 
     # 'NIL'
-    @test isnull(zrank(conn, testkey, "z"))
+    @test zrank(conn, testkey, "z") == nothing
     del(conn, testkey)
 
     zadd(conn, testkey, zip(1:length(vals), vals)...)
@@ -291,9 +291,9 @@ end
     @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
     @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
     @test zrevrank(conn, testkey, "e") == 5
-    @test isnull(zrevrank(conn, "ordered_set", "non_existent_member"))
+    @test zrevrank(conn, "ordered_set", "non_existent_member") == nothing
     @test zscore(conn, testkey, "e") == "5"
-    @test isnull(zscore(conn, "ordered_set", "non_existent_member"))
+    @test zscore(conn, "ordered_set", "non_existent_member") == nothing
     del(conn, testkey)
 
     vals2 = ["a", "b", "c", "d"]

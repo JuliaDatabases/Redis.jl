@@ -184,32 +184,32 @@ end
 end
 
 @testset "Hashes" begin
-    @test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
-    @test hexists(conn, testhash, 1) == true
-    @test hexists(conn, testhash, "1") == true
-    @test hget(conn, testhash, 1) == "2"
-    @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
+@test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
+@test hexists(conn, testhash, 1) == true
+@test hexists(conn, testhash, "1") == true
+@test hget(conn, testhash, 1) == "2"
+@test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
 
-    @test hget(conn, testhash, "non_existent_field") == nothing
-    @test hmget(conn, testhash, 1, 3) == ["2", "4"]
-    a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
-    @test a[1] == nothing
-    @test a[2] == nothing
+@test hget(conn, testhash, "non_existent_field") == nothing
+@test hmget(conn, testhash, 1, 3) == ["2", "4"]
+a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
+@test a[1] == nothing
+@test a[2] == nothing
 
-    @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
-    @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
-    @test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
-    @test hget(conn, testhash, "3") == "10" # but still sets it to the new value
-    @test hset(conn, testhash, "10", "10") == true # new field hset returns true
-    @test hget(conn, testhash, "10") == "10" # correctly set new field
-    @test hsetnx(conn, testhash, "1", "10") == false # field exists
-    @test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
-    @test hlen(conn, testhash) == 5  # testhash now has 5 fields
+@test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
+@test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
+@test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
+@test hget(conn, testhash, "3") == "10" # but still sets it to the new value
+@test hset(conn, testhash, "10", "10") == true # new field hset returns true
+@test hget(conn, testhash, "10") == "10" # correctly set new field
+@test hsetnx(conn, testhash, "1", "10") == false # field exists
+@test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
+@test hlen(conn, testhash) == 5  # testhash now has 5 fields
 
-    @test hincrby(conn, testhash, "1", 1) == 3
-    @test float(hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
+@test hincrby(conn, testhash, "1", 1) == 3
+@test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
 
-    del(conn, testhash)
+del(conn, testhash)
 end
 
 @testset "Sets" begin

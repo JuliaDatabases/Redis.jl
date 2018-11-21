@@ -46,11 +46,7 @@ function convert_response(::Type{Dict{AbstractString, AbstractString}}, response
 end
 
 function convert_eval_response(::Any, response)
-    if response == nothing
-        nothing
-    else
-        response
-    end
+    return response
 end
 
 # import Base: ==
@@ -69,21 +65,11 @@ function convert_response(::Type{Array{AbstractString, 1}}, response)
 end
 
 function convert_response(::Type{Union{T, Nothing}}, response) where {T<:Number}
-    if response == nothing
-       nothing
-   elseif issubtype(typeof(response), T)
-       response
-    else
-       response
-    end
+    return response
 end
 
 function convert_response(::Type{Union{T, Nothing}}, response) where {T<:AbstractString}
-    if response == nothing
-       nothing
-    else
-       response
-    end
+    return response
 end
 
 # redundant

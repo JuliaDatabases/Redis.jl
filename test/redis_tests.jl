@@ -253,7 +253,7 @@ end
     @test zrem(conn, testkey, s1, s2) == 2
     del(conn, testkey)
 
-    @test zadd(conn, testkey, zip(zeros(1:3), [s1, s2, s3])...) == 3
+    @test zadd(conn, testkey, zip(zeros(3), [s1, s2, s3])...) == 3
     del(conn, testkey)
 
     vals = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]

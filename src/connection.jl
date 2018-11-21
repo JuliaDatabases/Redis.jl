@@ -27,7 +27,7 @@ struct TransactionConnection <: RedisConnectionBase
     socket::TCPSocket
 end
 
-struct PipelineConnection <: RedisConnectionBase
+mutable struct PipelineConnection <: RedisConnectionBase
     host::AbstractString
     port::Integer
     password::AbstractString

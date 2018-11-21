@@ -2,7 +2,7 @@ services:
   - redis-server
 language: julia
 julia:
-  - 0.6
+  - 1.0
   - nightly
 matrix:
   allow_failures:
@@ -13,4 +13,4 @@ notifications:
 #  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
 #  - julia -e 'Pkg.init(); Pkg.clone(pwd()); Pkg.test("Redis", coverage=true)'
 after_success:
-  - julia -e 'cd(Pkg.dir("Redis")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'
+  - julia -e 'cd(joinpath(dirname(pathof(Redis)), "..")); using Pkg; Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder())'

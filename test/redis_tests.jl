@@ -378,18 +378,28 @@ end
 end
 
 @testset "Pub/Sub" begin
-    g(y) = print(y)
-    subs = open_subscription(conn, g)
+    function handleException(ex)
+        io = IOBuffer()
+        showerror(io, ex, catch_backtrace())
+        err = String(take!(io))
+        @warn "Error while processing subscription: $err"
+        return nothing
+    end
     x = Any[]
-    f(y) = push!(x, y)
+    function f(y::String)
+        push!(x, y)
+    end
+    subs = open_subscription(conn, handleException) #handleException is called when an exception occurs
     subscribe(subs, "channel", f)
     subscribe(subs, "duplicate", f)
-    @test publish(conn, "channel", "hello, world!") == 1
+    @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
+    @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
     sleep(2)
-    @test x == ["hello, world!"]
+    @test x == ["hello, world!", "Okay, bye!"]
 
     # following command prints ("Invalid response received: ")
     disconnect(subs)
+    @info "This error is expected - to be addressed once the library is stable."
 end
 
 disconnect(conn)

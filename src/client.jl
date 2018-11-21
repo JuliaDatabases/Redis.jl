@@ -121,7 +121,7 @@ function read_pipeline(conn::PipelineConnection)
     result
 end
 
-nullcb(err) = nothing
+nullcb(err) = @debug err
 function open_subscription(conn::RedisConnection, err_callback=nullcb)
     s = SubscriptionConnection(conn)
     @async subscription_loop(s, err_callback)

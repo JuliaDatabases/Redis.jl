@@ -20,26 +20,26 @@ const REDIS_EXPIRED_KEY =  -2
 
 @testset "Strings" begin
     @test set(conn, testkey, s1)
-    @test get(conn, testkey) == Nullable(s1)
+    @test get(conn, testkey) == s1
     @test exists(conn, testkey)
     @test keys(conn, testkey) == Set([testkey])
     @test del(conn, testkey, "notakey", "notakey2") == 1  # only 1 of 3 key exists
 
     # 'NIL'
-    @test isnull(get(conn, "notakey"))
+    @test get(conn, "notakey") == nothing
 
     set(conn, testkey, s1)
     set(conn, testkey2, s2)
     set(conn, testkey3, s3)
-    # RANDOMKEY can return 'NIL', so it returns Nullable.  KEYS * always returns empty Set when Redis is empty
-    @test get(randomkey(conn)) in keys(conn, "*")
+    # RANDOMKEY can return 'NIL', so it returns Union{Nothing, T}.  KEYS * always returns empty Set when Redis is empty
+    @test randomkey(conn) in keys(conn, "*")
     @test getrange(conn, testkey, 0, 3) == s1[1:4]
 
     @test set(conn, testkey, 2)
     @test incr(conn, testkey) == 3
     @test incrby(conn, testkey, 3) == 6
     @test incrbyfloat(conn, testkey, 1.5) == "7.5"
-    @test mget(conn, testkey, testkey2, testkey3) == [Nullable("7.5"), Nullable(s2), Nullable(s3)]
+    @test mget(conn, testkey, testkey2, testkey3) == ["7.5", s2, s3]
     @test strlen(conn, testkey2) == length(s2)
     @test rename(conn, testkey2, testkey4) == "OK"
     @test testkey4 in keys(conn,"*")
@@ -111,7 +111,7 @@ end
     @test move(conn, testkey, 1)
     @test exists(conn, testkey) == false
     @test Redis.select(conn, 1) == "OK"
-    @test get(conn, testkey) == Nullable(s1)
+    @test get(conn, testkey) == s1
     del(conn, testkey)
     Redis.select(conn, 0)
 end
@@ -141,17 +141,17 @@ end
 
 @testset "Lists" begin
     @test lpush(conn, testkey, s1, s2, "a", "a", s3, s4) == 6
-    @test lpop(conn, testkey) == Nullable(s4)
-    @test rpop(conn, testkey) == Nullable(s1)
-    @test isnull(lpop(conn, "non_existent_list"))
-    @test isnull(rpop(conn, "non_existent_list"))
+    @test lpop(conn, testkey) == s4
+    @test rpop(conn, testkey) == s1
+    @test lpop(conn, "non_existent_list") == nothing
+    @test rpop(conn, "non_existent_list") == nothing
     @test llen(conn, testkey) == 4
-    @test isnull(lindex(conn, "non_existent_list", 1))
-    @test lindex(conn, testkey, 0) == Nullable(s3)
-    @test isnull(lindex(conn, testkey, 10))
+    @test lindex(conn, "non_existent_list", 1) == nothing
+    @test lindex(conn, testkey, 0) == s3
+    @test lindex(conn, testkey, 10) == nothing
     @test lrem(conn, testkey, 0, "a") == 2
     @test lset(conn, testkey, 0, s5) == "OK"
-    @test lindex(conn, testkey, 0) == Nullable(s5)
+    @test lindex(conn, testkey, 0) == s5
     @test linsert(conn, testkey, "BEFORE", s2, s3) == 3
     @test linsert(conn, testkey, "AFTER", s3, s6) == 4
     @test lpushx(conn, testkey2, "nothing")  == false
@@ -165,9 +165,9 @@ end
     lpush(conn, testkey, s3)
     listvals = [s3; s4; s5]
     for i in 1:3
-        @test rpoplpush(conn, testkey, testkey2) == Nullable(listvals[4-i])  # rpop
+        @test rpoplpush(conn, testkey, testkey2) == listvals[4-i]  # rpop
     end
-    @test isnull(rpoplpush(conn, testkey, testkey2))
+    @test rpoplpush(conn, testkey, testkey2) == nothing
     @test llen(conn, testkey) == 0
     @test llen(conn, testkey2) == 3
     @test lrange(conn, testkey2, 0, -1) == listvals
@@ -187,27 +187,27 @@ end
     @test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
     @test hexists(conn, testhash, 1) == true
     @test hexists(conn, testhash, "1") == true
-    @test hget(conn, testhash, 1) == Nullable("2")
+    @test hget(conn, testhash, 1) == "2"
     @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
 
-    @test isnull(hget(conn, testhash, "non_existent_field"))
-    @test hmget(conn, testhash, 1, 3) == [Nullable("2"), Nullable("4")]
+    @test hget(conn, testhash, "non_existent_field") == nothing
+    @test hmget(conn, testhash, 1, 3) == ["2", "4"]
     a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
-    @test isnull(a[1])
-    @test isnull(a[2])
+    @test a[1] == nothing
+    @test a[2] == nothing
 
     @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
     @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
     @test hset(conn, testhash, "3", 10) == false # if the field already hset returns false
-    @test hget(conn, testhash, "3") == Nullable("10") # but still sets it to the new value
+    @test hget(conn, testhash, "3") == "10" # but still sets it to the new value
     @test hset(conn, testhash, "10", "10") == true # new field hset returns true
-    @test hget(conn, testhash, "10") == Nullable("10") # correctly set new field
+    @test hget(conn, testhash, "10") == "10" # correctly set new field
     @test hsetnx(conn, testhash, "1", "10") == false # field exists
     @test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
     @test hlen(conn, testhash) == 5  # testhash now has 5 fields
 
     @test hincrby(conn, testhash, "1", 1) == 3
-    @test float(hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
+    @test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
 
     del(conn, testhash)
 end
@@ -228,14 +228,14 @@ end
     @test smembers(conn, testkey3) == Set([])
     @test sinterstore(conn, testkey3, testkey, testkey2) == 1
     # only the following method returns 'nil' if the Set does not exist
-    @test srandmember(conn, testkey3) in Set([Nullable(s1), Nullable(s2), Nullable(s3)])
-    @test isnull(srandmember(conn, "empty_set"))
+    @test srandmember(conn, testkey3) in Set([s1, s2, s3])
+    @test srandmember(conn, "empty_set") == nothing
     # this method returns an emtpty Set if the the Set is empty
     @test issubset(srandmember(conn, testkey2, 2), Set([s1, s2, s3]))
     @test srandmember(conn, "non_existent_set", 10) == Set{AbstractString}()
     @test sdiff(conn, testkey, testkey2) == Set([s1])
-    @test spop(conn, testkey) in Set([Nullable(s1), Nullable(s2), Nullable(s3)])
-    @test isnull(spop(conn, "empty_set"))
+    @test spop(conn, testkey) in Set([s1, s2, s3])
+    @test spop(conn, "empty_set") == nothing
     del(conn, testkey, testkey2, testkey3)
 end
 
@@ -249,11 +249,11 @@ end
     @test zcount(conn, testkey, 0, 1) == 2   # range as int
     @test zcount(conn, testkey, "-inf", "+inf") == 3 # range as string
     @test zincrby(conn, testkey, 1, s1) == "2"
-    @test float(zincrby(conn, testkey, 1.2, s1)) == 3.2
+    @test parse(Float64, zincrby(conn, testkey, 1.2, s1)) == 3.2
     @test zrem(conn, testkey, s1, s2) == 2
     del(conn, testkey)
 
-    @test zadd(conn, testkey, zip(zeros(1:3), [s1, s2, s3])...) == 3
+    @test zadd(conn, testkey, zip(zeros(3), [s1, s2, s3])...) == 3
     del(conn, testkey)
 
     vals = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]
@@ -274,10 +274,10 @@ end
     @test zrangebyscore(conn, testkey, "(1", "2") == OrderedSet(["b"])
     @test zrangebyscore(conn, testkey, "1", "2") == OrderedSet(["a", "b"])
     @test zrangebyscore(conn, testkey, "(1", "(2") == OrderedSet([])
-    @test zrank(conn, testkey, "d") == Nullable(3) # redis arrays 0-base
+    @test zrank(conn, testkey, "d") == 3 # redis arrays 0-base
 
     # 'NIL'
-    @test isnull(zrank(conn, testkey, "z"))
+    @test zrank(conn, testkey, "z") == nothing
     del(conn, testkey)
 
     zadd(conn, testkey, zip(1:length(vals), vals)...)
@@ -290,10 +290,10 @@ end
     @test zrevrangebyscore(conn, testkey, "+inf", "-inf", "WITHSCORES", "LIMIT", 2, 3) == OrderedSet(["h", "8", "g", "7", "f", "6"])
     @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
     @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
-    @test zrevrank(conn, testkey, "e") == Nullable(5)
-    @test isnull(zrevrank(conn, "ordered_set", "non_existent_member"))
-    @test zscore(conn, testkey, "e") == Nullable("5")
-    @test isnull(zscore(conn, "ordered_set", "non_existent_member"))
+    @test zrevrank(conn, testkey, "e") == 5
+    @test zrevrank(conn, "ordered_set", "non_existent_member") == nothing
+    @test zscore(conn, testkey, "e") == "5"
+    @test zscore(conn, "ordered_set", "non_existent_member") == nothing
     del(conn, testkey)
 
     vals2 = ["a", "b", "c", "d"]
@@ -378,18 +378,28 @@ end
 end
 
 @testset "Pub/Sub" begin
-    g(y) = print(y)
-    subs = open_subscription(conn, g)
+    function handleException(ex)
+        io = IOBuffer()
+        showerror(io, ex, catch_backtrace())
+        err = String(take!(io))
+        @warn "Error while processing subscription: $err"
+        return nothing
+    end
     x = Any[]
-    f(y) = push!(x, y)
+    function f(y::String)
+        push!(x, y)
+    end
+    subs = open_subscription(conn, handleException) #handleException is called when an exception occurs
     subscribe(subs, "channel", f)
     subscribe(subs, "duplicate", f)
-    @test publish(conn, "channel", "hello, world!") == 1
+    @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
+    @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
     sleep(2)
-    @test x == ["hello, world!"]
+    @test x == ["hello, world!", "Okay, bye!"]
 
     # following command prints ("Invalid response received: ")
     disconnect(subs)
+    @info "This error is expected - to be addressed once the library is stable."
 end
 
 disconnect(conn)

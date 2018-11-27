@@ -1,9 +1,9 @@
 import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
 
 abstract type RedisConnectionBase end
-abstract type SubscribableConnection<:RedisConnectionBase end 
+abstract type SubscribableConnection<:RedisConnectionBase end
 
-immutable RedisConnection <: SubscribableConnection
+struct RedisConnection <: SubscribableConnection
     host::AbstractString
     port::Integer
     password::AbstractString
@@ -11,7 +11,7 @@ immutable RedisConnection <: SubscribableConnection
     socket::TCPSocket
 end
 
-immutable SentinelConnection <: SubscribableConnection
+struct SentinelConnection <: SubscribableConnection
     host::AbstractString
     port::Integer
     password::AbstractString
@@ -19,7 +19,7 @@ immutable SentinelConnection <: SubscribableConnection
     socket::TCPSocket
 end
 
-immutable TransactionConnection <: RedisConnectionBase
+struct TransactionConnection <: RedisConnectionBase
     host::AbstractString
     port::Integer
     password::AbstractString
@@ -27,7 +27,7 @@ immutable TransactionConnection <: RedisConnectionBase
     socket::TCPSocket
 end
 
-type PipelineConnection <: RedisConnectionBase
+mutable struct PipelineConnection <: RedisConnectionBase
     host::AbstractString
     port::Integer
     password::AbstractString
@@ -36,7 +36,7 @@ type PipelineConnection <: RedisConnectionBase
     num_commands::Integer
 end
 
-immutable SubscriptionConnection <: RedisConnectionBase
+struct SubscriptionConnection <: RedisConnectionBase
     host::AbstractString
     port::Integer
     password::AbstractString

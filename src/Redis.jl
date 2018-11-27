@@ -1,5 +1,6 @@
 module Redis
-using Base.Dates
+using Dates
+using Sockets
 
 import Base.get, Base.keys, Base.time
 

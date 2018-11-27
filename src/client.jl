@@ -16,7 +16,7 @@ function flatten(token::Dict)
     r
 end
 
-function flatten{T<:Number, U<:AbstractString}(token::Tuple{T, U}...)
+function flatten(token::Tuple{T, U}...) where {T <: Number, U<:AbstractString}
     r=[]
     for item in token
         push!(r, item[1])
@@ -29,7 +29,8 @@ flatten_command(command...) = vcat(map(flatten, command)...)
 
 ######## Type Conversions #########
 
-convert_response(::Type{Float64}, response) = float(response)::Float64
+convert_response(::Type{Float64}, response::T) where {T <: AbstractString} = parse(Float64, response)::Float64
+convert_response(::Type{Float64}, response::T) where {T <: Real} = float(response)::Float64
 convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
 convert_response(::Type{Bool}, response::Integer) = response == 1 ? true : false
 convert_response(::Type{Set{AbstractString}}, response) = Set{AbstractString}(response)
@@ -45,16 +46,12 @@ function convert_response(::Type{Dict{AbstractString, AbstractString}}, response
 end
 
 function convert_eval_response(::Any, response)
-    if response == nothing
-        Nullable()
-    else
-        response
-    end
+    return response
 end
 
-import Base: ==
-=={T<:AbstractString, U<:AbstractString}(A::Nullable{T}, B::Nullable{U}) = get(A) == get(B)
-=={T<:Number, U<:Number}(A::Nullable{T}, B::Nullable{U}) = get(A) == get(B)
+# import Base: ==
+# ==(A::Union{T, Nothing}, B::Union{U, Nothing}) where {T<:AbstractString, U<:AbstractString} = A == B
+# ==(A::Union{T, Nothing}, B::Union{U, Nothing}) where {T<:Number, U<:Number} = A == B
 
 convert_response(::Type{AbstractString}, response) = string(response)
 convert_response(::Type{Integer}, response) = response
@@ -67,30 +64,20 @@ function convert_response(::Type{Array{AbstractString, 1}}, response)
     r
 end
 
-function convert_response{T<:Number}(::Type{Nullable{T}}, response)
-    if response == nothing
-       Nullable{T}()
-   elseif issubtype(typeof(response), T)
-        Nullable{T}(response)
-    else
-       response
-    end
+function convert_response(::Type{Union{T, Nothing}}, response) where {T<:Number}
+    return response
 end
 
-function convert_response{T<:AbstractString}(::Type{Nullable{T}}, response)
-    if response == nothing
-       Nullable{T}()
-    else
-       Nullable{T}(response)
-    end
+function convert_response(::Type{Union{T, Nothing}}, response) where {T<:AbstractString}
+    return response
 end
 
 # redundant
-function convert_response{T<:Number}(::Type{Array{Nullable{T}, 1}}, response)
+function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {T<:Number}
     if response == nothing
-        Array{Nullable{T}, 1}()
+        Array{Union{T, Nothing}, 1}()
    else
-        r = Array{Nullable{T},1}()
+        r = Array{Union{T, Nothing}, 1}()
         for item in response
             push!(r, tryparse(T, item))
         end
@@ -98,13 +85,13 @@ function convert_response{T<:Number}(::Type{Array{Nullable{T}, 1}}, response)
     end
 end
 
-function convert_response{T<:AbstractString}(::Type{Array{Nullable{T}, 1}}, response)
+function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {T<:AbstractString}
     if response == nothing
-        Array{Nullable{T}, 1}()
+        Array{Union{T, Nothing}, 1}()
    else
-        r = Array{Nullable{T},1}()
+        r = Array{Union{T, Nothing}, 1}()
         for item in response
-            push!(r, Nullable{T}(item))
+            push!(r, item)
         end
         r
     end
@@ -134,7 +121,7 @@ function read_pipeline(conn::PipelineConnection)
     result
 end
 
-nullcb(err) = nothing
+nullcb(err) = @debug err
 function open_subscription(conn::RedisConnection, err_callback=nullcb)
     s = SubscriptionConnection(conn)
     @async subscription_loop(s, err_callback)

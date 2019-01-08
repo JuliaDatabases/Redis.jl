@@ -113,7 +113,3 @@ end
 function is_connected(conn::RedisConnectionBase)
     conn.socket.status == StatusActive || conn.socket.status == StatusOpen || conn.socket.status == StatusPaused
 end
-
-function send_command(conn::RedisConnectionBase, command::AbstractString)
-    write(conn.socket, command)
-end

@@ -1,17 +1,18 @@
 import DataStructures.OrderedSet
 
 flatten(token) = string(token)
-flatten(token::AbstractString) = token
+flatten(token::Vector{UInt8}) = [token]
+flatten(token::String) = token
 flatten(token::Array) = map(string, token)
 flatten(token::Set) = map(string, collect(token))
 
 # the following doesn't work in Julia v0.5
 # flatten(token::Dict) = map(string, vcat(map(collect, token)...))
 function flatten(token::Dict)
-    r=AbstractString[]
+    r=Union{String, Vector{UInt8}}[]
     for (k,v) in token
-        push!(r, string(k))
-        push!(r, string(v))
+        push!(r, flatten(k))
+        push!(r, flatten(v))
     end
     r
 end

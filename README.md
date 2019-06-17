@@ -11,13 +11,13 @@ Redis.jl is a fully-featured Redis client for the Julia programming language. Th
 
 The Redis.jl API resides in the `Redis` module.
 
-```
+```julia
 using Redis
 ```
 
 The main entrypoint into the API is the `RedisConnection`, which represents a stateful TCP connection to a single Redis server instance. A single constructor allows the user to set all parameters while supplying the usual Redis defaults. Once a `RedisConnection` has been created, it can be used to access any of the expected Redis commands.
 
-```
+```julia
 conn = RedisConnection() # host=127.0.0.1, port=6379, db=0, no password
 # conn = RedisConnection(host="192.168.0.1", port=6380, db=15, password="supersecure")
 
@@ -27,7 +27,7 @@ get(conn, "foo") # Returns "bar"
 
 Anywhere that `String` would normally be accepted, keywords can be passed as well. In fact, any Type can be passed so long as the type has a method for the `string` function.
 
-```
+```julia
 set(conn, :keyword, :value)
 get(conn, :keyword) # Returns "value"
 ```
@@ -39,7 +39,7 @@ For any Redis command `x`, the Julia function to call that command is `x`. Redis
 
 When the user is finished interacting with Redis, the connection should be destroyed to prevent resource leaks:
 
-```
+```julia
 disconnect(conn)
 ```
 
@@ -49,7 +49,7 @@ The `disconnect` function can be used with any of the connection types detailed 
 
 Some Redis commands have a more complex syntax that allows for options to be passed to the command. Redis.jl supports these options through the use of a final varargs parameter to those functions (for example, `scan`). In these cases, the options should be passed as individual strings at the end of the function. As mentioned earlier, keywords or other Types can be passed for these options as well and will be coerced to `String`.
 
-```
+```julia
 scan(conn, 0, "match", "foo*")
 scan(conn, 2, :count, 2)
 ```
@@ -62,14 +62,14 @@ An exception to this option syntax are the functions `zinterstore` and `zunionst
 
 Redis.jl supports pipelining through the `PipelineConnection`. Commands are executed in much the same way as standard Redis commands:
 
-```
+```julia
 pipeline = open_pipeline(conn)
 set(pipeline, "somekey", "somevalue")
 ```
 
 Commands will be sent directly to the Redis server without waiting for a response. Responses can be read at any time in the future using the `read_pipeline` command:
 
-```
+```julia
 responses = read_pipeline(pipeline) # responses == ["OK"]
 ```
 
@@ -83,7 +83,7 @@ Redis.jl supports MULTI/EXEC transactions through two methods: using a `RedisCon
 
 If the user wants to build a transaction a single time and execute it on the server, the simplest way to do so is to send the commands as you would at the Redis cli.
 
-```
+```julia
 multi(conn)
 set(conn, "foo", "bar")
 get(conn, "foo") # Returns "QUEUED"
@@ -97,7 +97,7 @@ It is important to note that after the final call to `exec`, the RedisConnection
 
 If the user is planning on using multiple transactions on the same connection, it may make sense for the user to keep a separate connection for transactional use. The `TransactionConnection` is almost identical to the `RedisConnection`, except that it is always in a `MULTI` block. The user should never manually call `multi` with a `TransactionConnection`.
 
-```
+```julia
 trans = open_transaction(conn)
 set(trans, "foo", "bar")
 get(trans, "foo") # Returns "QUEUED"
@@ -112,13 +112,13 @@ Notice the subtle difference from the previous example; after calling `exec`, th
 
 Redis.jl provides full support for Redis pub/sub. Publishing is accomplished by using the command as normal:
 
-```
+```julia
 publish(conn, "channel", "hello, world!")
 ```
 
 Subscriptions are handled using the `SubscriptionConnection`. Similar to the `TransactionConnection`, the `SubscriptionConnection` is constructed from an existing `RedisConnection`. Once created, the `SubscriptionConnection` maintains a simple event loop that will call the user's defined function whenever a message is received on the specified channel.
 
-```
+```julia
 x = Any[]
 f(y) = push!(x, y)
 sub = open_subscription(conn)
@@ -129,7 +129,7 @@ x # Returns ["foobar"]
 
 Multiple channels can be subscribed together by providing a `Dict{String, Function}`.
 
-```
+```julia
 x = Any[]
 f(y) = push!(x, y)
 sub = open_subscription(conn)
@@ -152,7 +152,7 @@ When a `SubscriptionConnection` instance is created via `open_subscription`, it 
 
 Redis.jl also provides functionality for interacting with Redis Sentinel instances through the `SentinelConnection`. All Sentinel functionality other than `ping` is implemented through the `sentinel_` functions:
 
-```
+```julia
 sentinel = SentinelConnection() # Constructor has the same options as RedisConnection
 sentinel_masters(sentinel) # Returns an Array{Dict{String, String}} of master info
 ```
@@ -182,7 +182,7 @@ The following methods return a `Union{T, Nothing}(value)` corresponding to a Red
 * `spop(conn, "empty_set")`
 * `srandmember(conn, "empty_set")`     
 
-####Sorted Sets
+#### Sorted Sets
 * `zrank(conn, "ordered_set", "non_existent_member")`
 * `zrevrank(conn, "ordered_set", "non_existent_member")`
 * `zscore(conn, "ordered_set", "non_existent_member")`

@@ -1,4 +1,4 @@
-import Base.connect, Base.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
+import Sockets.connect, Sockets.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
 
 abstract type RedisConnectionBase end
 abstract type SubscribableConnection<:RedisConnectionBase end

@@ -16,7 +16,7 @@ function flatten(token::Dict)
     r
 end
 
-function flatten(token::Tuple{T, U}...) where {T <: Number, U<:AbstractString}
+function flatten(token::Tuple{T, U}...) where {T <: Number, U <: AbstractString}
     r=[]
     for item in token
         push!(r, item[1])
@@ -68,7 +68,7 @@ function convert_response(::Type{Union{T, Nothing}}, response) where {T<:Number}
     return response
 end
 
-function convert_response(::Type{Union{T, Nothing}}, response) where {T<:AbstractString}
+function convert_response(::Type{Union{T, Nothing}}, response) where {T <: AbstractString}
     return response
 end
 
@@ -85,7 +85,7 @@ function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {
     end
 end
 
-function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {T<:AbstractString}
+function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {T <: AbstractString}
     if response == nothing
         Array{Union{T, Nothing}, 1}()
    else

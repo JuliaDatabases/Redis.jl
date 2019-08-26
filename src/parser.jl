@@ -22,7 +22,7 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
             "Bulk string read error: expected $len bytes; received $(length(b))"
         ))
     else
-        return String(b[1:end-2])
+        return resize!(b, slen)
     end
 end
 

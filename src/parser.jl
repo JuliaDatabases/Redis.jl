@@ -8,9 +8,12 @@ function getline(s::TCPSocket)
 end
 
 function read_reply(conn::RedisConnectionBase)
+    convert_reply(reply::Array{UInt8}) = String(reply)
+    convert_reply(reply::Array) = [convert_reply(r) for r in reply]
+    convert_reply(x) = x
     l = getline(conn.socket)
     reply = parseline(l, conn.socket)
-    return reply
+    convert_reply(reply)
 end
 
 parse_error(l::AbstractString) = throw(ServerException(l))
@@ -79,7 +82,6 @@ function pack_command(io::IO, command::Vector)
     for token in command
         b += write_token(io, token)
     end
-
     b
 end
 

@@ -34,20 +34,23 @@ convert_response(::Type{Float64}, response::T) where {T <: AbstractString} = par
 convert_response(::Type{Float64}, response::T) where {T <: Real} = float(response)::Float64
 convert_response(::Type{Bool}, response::AbstractString) = response == "OK" || response == "QUEUED" ? true : false
 convert_response(::Type{Bool}, response::Integer) = response == 1 ? true : false
-convert_response(::Type{Set{AbstractString}}, response) = Set{AbstractString}(response)
-convert_response(::Type{OrderedSet{AbstractString}}, response) = OrderedSet{AbstractString}(response)
+convert_response(::Type{Set{AbstractString}}, response::Array) = Set{AbstractString}(String(r) for r in response)
+convert_response(::Type{OrderedSet{AbstractString}}, response) = OrderedSet{AbstractString}(String(r) for r in response)
 
 function convert_response(::Type{Dict{AbstractString, AbstractString}}, response)
     iseven(length(response)) || throw(ClientException("Response could not be converted to Dict"))
     retdict = Dict{AbstractString, AbstractString}()
     for i=1:2:length(response)
-        retdict[response[i]] = response[i+1]
+        retdict[String(response[i])] = String(response[i+1])
     end
     retdict
 end
 
+function convert_eval_response(::Any, response::Array)
+    return [String(r) for r in response]
+end
 function convert_eval_response(::Any, response)
-    return response
+    return String(response)
 end
 
 # import Base: ==
@@ -60,7 +63,7 @@ convert_response(::Type{Integer}, response) = response
 function convert_response(::Type{Array{AbstractString, 1}}, response)
     r = Array{AbstractString, 1}()
     for item in response
-        push!(r, item)
+        push!(r, String(item))
     end
     r
 end
@@ -92,6 +95,9 @@ function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {
    else
         r = Array{Union{T, Nothing}, 1}()
         for item in response
+            if !isnothing(item)
+                item = String(item)
+            end
             push!(r, item)
         end
         r

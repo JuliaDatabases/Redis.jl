@@ -7,10 +7,11 @@ function getline(s::TCPSocket)
     return l
 end
 
+convert_reply(reply::Array{UInt8}) = String(reply)
+convert_reply(reply::Array) = [convert_reply(r) for r in reply]
+convert_reply(x) = x
+
 function read_reply(conn::RedisConnectionBase)
-    convert_reply(reply::Array{UInt8}) = String(reply)
-    convert_reply(reply::Array) = [convert_reply(r) for r in reply]
-    convert_reply(x) = x
     l = getline(conn.socket)
     reply = parseline(l, conn.socket)
     convert_reply(reply)

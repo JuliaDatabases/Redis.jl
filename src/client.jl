@@ -140,6 +140,7 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
         try
             l = getline(conn.socket)
             reply = parseline(l, conn.socket)
+            reply = convert_reply(reply)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message
                 conn.callbacks[message.channel](message.message)

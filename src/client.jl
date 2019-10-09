@@ -95,7 +95,7 @@ function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {
    else
         r = Array{Union{T, Nothing}, 1}()
         for item in response
-            if !isnothing(item)
+            if item !== nothing
                 item = String(item)
             end
             push!(r, item)

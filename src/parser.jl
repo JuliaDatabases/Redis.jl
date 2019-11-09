@@ -7,10 +7,14 @@ function getline(s::TCPSocket)
     return l
 end
 
+convert_reply(reply::Array{UInt8}) = String(reply)
+convert_reply(reply::Array) = [convert_reply(r) for r in reply]
+convert_reply(x) = x
+
 function read_reply(conn::RedisConnectionBase)
     l = getline(conn.socket)
     reply = parseline(l, conn.socket)
-    return reply
+    convert_reply(reply)
 end
 
 parse_error(l::AbstractString) = throw(ServerException(l))
@@ -22,7 +26,7 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
             "Bulk string read error: expected $len bytes; received $(length(b))"
         ))
     else
-        return String(b[1:end-2])
+        return resize!(b, slen)
     end
 end
 
@@ -62,25 +66,32 @@ function parseline(l::AbstractString, s::TCPSocket)
     end
 end
 
+write_token(io::IO, token::Union{AbstractString, Vector{UInt8}}) =
+  write(io, "\$", string(sizeof(token)), "\r\n", token, "\r\n")
+
+function write_token(io::IO, token)
+  s = string(token)
+  write(io, "\$", string(sizeof(s)), "\r\n", s, "\r\n")
+end
 
 """
 Formatting of outgoing commands to the Redis server
 """
-function pack_command(command)
-    packed_command = "*$(length(command))\r\n"
+function pack_command(io::IO, command::Vector)
+    b = write(io, "*$(length(command))\r\n")
+
     for token in command
-        ltoken = ifelse(typeof(token) <: Number, length(string(token)), length(token))
-        packed_command = string(packed_command, "\$$(ltoken)\r\n", token, "\r\n")
+        b += write_token(io, token)
     end
-    packed_command
+    b
 end
 
 function execute_command_without_reply(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
-    send_command(conn, pack_command(command))
+    pack_command(conn.socket, command)
 end
 
-function execute_command(conn::RedisConnectionBase, command)
+function execute_command(conn::RedisConnectionBase, command::Vector)
     execute_command_without_reply(conn, command)
     read_reply(conn)
 end

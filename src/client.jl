@@ -68,6 +68,15 @@ function convert_response(::Type{Array{AbstractString, 1}}, response)
     r
 end
 
+function convert_response(::Type{Tuple{Integer,Array{AbstractString,1}}}, response)
+    cursor = parse(Int, response[1])
+    r = Array{AbstractString, 1}()
+    for item in response[2]
+        push!(r, convert(String, item))
+    end
+    (cursor, r)
+end
+
 function convert_response(::Type{Union{T, Nothing}}, response) where {T<:Number}
     return response
 end

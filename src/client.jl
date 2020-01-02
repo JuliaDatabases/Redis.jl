@@ -172,6 +172,9 @@ macro redisfunction(command::AbstractString, ret_type, args...)
                 execute_command_without_reply(conn, flatten_command($(command...), $(args...)))
                 conn.num_commands += 1
             end
+            function $(func_name)(conn::SubscriptionConnection, $(args...))
+                execute_command_without_reply(conn, flatten_command($(command...), $(args...)))
+            end
         end
     else
         return quote

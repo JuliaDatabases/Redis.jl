@@ -210,6 +210,16 @@ end
     @test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
 
     del(conn, testhash)
+
+    N = 1500
+    @test hmset(conn, testhash, Dict(i=>i for i=1:N))
+    (cursor, d) = hscan(conn, testhash, 0)
+    while cursor != 0
+        (cursor, d_new) = hscan(conn, testhash, cursor)
+        merge!(d, d_new)
+    end
+    @test d == Dict(string(i)=>string(i) for i=1:N)
+    del(conn, testhash)
 end
 
 @testset "Sets" begin

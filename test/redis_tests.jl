@@ -185,6 +185,7 @@ end
 
 @testset "Hashes" begin
     @test hmset(conn, testhash, Dict(1 => 2, "3" => 4, "5" => "6"))
+    @test hscan(conn,  testhash, 0) == (0, Dict("1" => "2", "3" => "4", "5" => "6"))
     @test hexists(conn, testhash, 1) == true
     @test hexists(conn, testhash, "1") == true
     @test hget(conn, testhash, 1) == "2"
@@ -205,7 +206,6 @@ end
     @test hsetnx(conn, testhash, "1", "10") == false # field exists
     @test hsetnx(conn, testhash, "11", "10") == true # field doesn't exist
     @test hlen(conn, testhash) == 5  # testhash now has 5 fields
-
     @test hincrby(conn, testhash, "1", 1) == 3
     @test parse(Float64, hincrbyfloat(conn, testhash, "1", 1.5)) == 4.5
 

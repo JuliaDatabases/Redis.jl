@@ -83,7 +83,7 @@ end
 @redisfunction "hset" Bool key field value
 @redisfunction "hsetnx" Bool key field value
 @redisfunction "hvals" Array{AbstractString, 1} key
-@redisfunction "hscan" Array key cursor::Integer options...
+@redisfunction "hscan" Tuple{Integer, Dict{AbstractString, AbstractString}} key cursor::Integer options...
 
 # List commands
 @redisfunction "blpop" Array{AbstractString, 1} keys timeout

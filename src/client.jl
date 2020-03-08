@@ -77,6 +77,11 @@ function convert_response(::Type{Tuple{Integer,Array{AbstractString,1}}}, respon
     (cursor, r)
 end
 
+function convert_response(::Type{Tuple{Integer,Dict{AbstractString,AbstractString}}}, response::Array{Any,1})
+    cursor = parse(Int, response[1])
+    return (cursor, convert_response(Dict{AbstractString, AbstractString}, response[2]))
+end
+
 function convert_response(::Type{Union{T, Nothing}}, response) where {T<:Number}
     return response
 end

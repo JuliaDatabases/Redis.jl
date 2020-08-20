@@ -175,6 +175,7 @@ The following methods return a `Union{T, Nothing}(value)` corresponding to a Red
 * `lpop(conn, "non_existent_list")`
 * `rpop(conn, "non_existent_list")`
 * `rpoplpush(conn, "non_existent_list", "some_list")`
+* `llen(conn, "some_list")`
 
 #### Sets
 * `spop(conn, "empty_set")`

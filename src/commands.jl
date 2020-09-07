@@ -230,6 +230,7 @@ end
 @redisfunction "bgrewriteaof" Bool
 @redisfunction "bgsave" AbstractString
 @redisfunction "client_getname" AbstractString
+@redisfunction "client_id" Integer
 @redisfunction "client_list" AbstractString
 @redisfunction "client_pause" Bool timeout
 @redisfunction "client_setname" Bool name

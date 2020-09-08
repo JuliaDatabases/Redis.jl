@@ -168,10 +168,10 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
 end
 
 macro redisfunction(command::AbstractString, ret_type, args...)
+    is_exec = Symbol(command) == :exec
     func_name = esc(Symbol(command))
     command = lstrip(command,'_')
     command = split(command, '_')
-
 
     if length(args) > 0
         return quote
@@ -191,18 +191,28 @@ macro redisfunction(command::AbstractString, ret_type, args...)
             end
         end
     else
-        return quote
+        q1 = quote
             function $(func_name)(conn::RedisConnection)
                 response = execute_command(conn, flatten_command($(command...)))
                 convert_response($ret_type, response)
             end
+        end
+        q2 = quote
             function $(func_name)(conn::TransactionConnection)
                 execute_command(conn, flatten_command($(command...)))
             end
+        end
+        q3 = quote
             function $(func_name)(conn::PipelineConnection)
                 execute_command_without_reply(conn, flatten_command($(command...)))
                 conn.num_commands += 1
             end
+        end
+        # To avoid redefining `function exec(conn::TransactionConnection)`
+        if is_exec
+            return Expr(:block, q1.args[2], q3.args[2])
+        else
+            return Expr(:block, q1.args[2], q2.args[2], q3.args[2])
         end
     end
 end

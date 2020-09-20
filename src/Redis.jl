@@ -47,7 +47,7 @@ export evalscript, evalsha, script_exists, script_flush, script_kill, script_loa
 # PubSub commands
 export subscribe, publish, psubscribe, punsubscribe, unsubscribe
 # Server commands
-export bgrewriteaof, bgsave, client_list, client_pause, client_setname, cluster_slots,
+export bgrewriteaof, bgsave, client_list, client_id, client_pause, client_setname, cluster_slots,
        command, command_count, command_info, config_get, config_resetstat, config_rewrite,
        config_set, dbsize, debug_object, debug_segfault, flushall, flushdb, info, lastsave,
        role, save, shutdown, slaveof, time

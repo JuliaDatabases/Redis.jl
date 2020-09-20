@@ -300,8 +300,12 @@ end
 
 # REF: https://github.com/stejin/Redis.jl/commit/eace3a1ace7b464ba1e5ea074b27e6e8f652820e
 function unsubscribe(conn::SubscriptionConnection, channels...)
-    delete!(conn.callbacks, channel)
-    execute_command_without_reply(conn, unshift!([channel], "unsubscribe"))
+    for channel in channels
+        delete!(conn.callbacks, channel)
+    end
+    for channel in channels
+        execute_command_without_reply(conn, unshift!([channel], "unsubscribe"))
+    end
 end
 # function unsubscribe(conn::SubscriptionConnection, channels...)
 #     for channel in channels

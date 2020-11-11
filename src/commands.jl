@@ -299,10 +299,10 @@ function subscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Func
 end
 
 function unsubscribe(conn::SubscriptionConnection, channels...)
-    for channel in channels
-        delete!(conn.callbacks, channel)
-    end
-    execute_command_without_reply(conn, pushfirst!(collect(channels), "unsubscribe"))
+  execute_command_without_reply(conn, pushfirst!(collect(channels), "unsubscribe"))
+  for channel in channels
+    delete!(conn.callbacks, channel)
+  end
 end
 
 function _psubscribe(conn::SubscriptionConnection, patterns::Array)

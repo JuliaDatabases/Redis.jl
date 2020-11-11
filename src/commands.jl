@@ -302,7 +302,7 @@ function unsubscribe(conn::SubscriptionConnection, channels...)
     for channel in channels
         delete!(conn.callbacks, channel)
     end
-    execute_command_without_reply(conn, pushfirst!(channels, "unsubscribe"))
+    execute_command_without_reply(conn, pushfirst!(collect(channels), "unsubscribe"))
 end
 
 function _psubscribe(conn::SubscriptionConnection, patterns::Array)

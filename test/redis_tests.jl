@@ -408,6 +408,9 @@ end
     @test x == ["hello, world!", "Okay, bye!"]
 
     # following command prints ("Invalid response received: ")
+    unsubscribe(subs, "channel")
+    @test publish(conn, "channel", "Okay, bye!") == 0 #Number of connected clients returned
+    
     disconnect(subs)
     @info "This error is expected - to be addressed once the library is stable."
 end

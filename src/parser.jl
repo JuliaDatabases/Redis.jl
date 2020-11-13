@@ -99,7 +99,9 @@ end
 baremodule SubscriptionMessageType
     const Message = 0
     const Pmessage = 1
-    const Other = 2
+    const Subscribe = 2
+    const Unsubscribe = 3
+    const Other = 4
 end
 
 struct SubscriptionMessage
@@ -114,6 +116,10 @@ struct SubscriptionMessage
             new(SubscriptionMessageType.Message, notification[2], notification[3])
         elseif message_type == "pmessage"
             new(SubscriptionMessageType.Pmessage, notification[2], notification[4])
+        elseif message_type == "subscribe"
+            new(SubscriptionMessageType.Subscribe, notification[2], "")
+        elseif message_type == "unsubscribe"
+            new(SubscriptionMessageType.Unsubscribe, notification[2], "")
         else
             new(SubscriptionMessageType.Other, "", "")
         end

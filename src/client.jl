@@ -160,6 +160,8 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
                 conn.callbacks[message.channel](message.message)
             elseif message.message_type == SubscriptionMessageType.Pmessage
                 conn.pcallbacks[message.channel](message.message)
+            elseif message.message_type == SubscriptionMessageType.Unsubscribe
+                delete!(conn.callbacks, message.channel)
             end
         catch err
             err_callback(err)

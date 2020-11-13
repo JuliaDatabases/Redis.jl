@@ -408,6 +408,7 @@ end
     @test x == ["hello, world!", "Okay, bye!"]
 
     unsubscribe(subs, "channel")
+    sleep(1)
     @test publish(conn, "channel", "Okay, bye!") == 0 #Number of connected clients returned
     
     # following command prints ("Invalid response received: ")

@@ -396,21 +396,29 @@ end
         return nothing
     end
     x = Any[]
+    doit = Base.Semaphore(1)
     function f(y::String)
         push!(x, y)
+        Base.release(doit)
     end
     subs = open_subscription(conn, handleException) #handleException is called when an exception occurs
+    messageReceived = Condition()
     subscribe(subs, "channel", f)
     subscribe(subs, "duplicate", f)
+
+    Base.acquire(doit)
     @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
+    Base.acquire(doit)
     @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
-    sleep(2)
+    Base.acquire(doit)
     @test x == ["hello, world!", "Okay, bye!"]
 
     unsubscribe(subs, "channel")
-    sleep(1)
-    @test publish(conn, "channel", "Okay, bye!") == 0 #Number of connected clients returned
-    
+    sleep(2)
+    @test publish(conn, "channel", "PS: I love you!") == 0 #Number of connected clients returned
+    sleep(2)
+    @test x == ["hello, world!", "Okay, bye!"]
+
     # following command prints ("Invalid response received: ")
     disconnect(subs)
     @info "This error is expected - to be addressed once the library is stable."

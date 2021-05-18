@@ -304,7 +304,7 @@ function unsubscribe(conn::SubscriptionConnection, channels...)
         delete!(conn.callbacks, channel)
     end
     for channel in channels
-        execute_command_without_reply(conn, unshift!([channel], "unsubscribe"))
+        execute_command_without_reply(conn, pushfirst!([channel], "unsubscribe"))
     end
 end
 # function unsubscribe(conn::SubscriptionConnection, channels...)
@@ -319,13 +319,13 @@ function _psubscribe(conn::SubscriptionConnection, patterns::Array)
 end
 
 function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
-    conn.callbacks[pattern] = callback
+    conn.pcallbacks[pattern] = callback
     _psubscribe(conn, [pattern])
 end
 
 function psubscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
     for (pattern, callback) in subs
-        conn.callbacks[pattern] = callback
+        conn.pcallbacks[pattern] = callback
     end
     _psubscribe(conn, collect(values(subs)))
 end
@@ -334,7 +334,9 @@ function punsubscribe(conn::SubscriptionConnection, patterns...)
     for pattern in patterns
         delete!(conn.pcallbacks, pattern)
     end
-    execute_command(conn, pushfirst!(patterns, "punsubscribe"))
+    for pattern in patterns
+        execute_command_without_reply(conn, pushfirst!([pattern], "unsubscribe"))
+    end
 end
 
 #Need a specialized version of execute to keep the connection in the transaction state

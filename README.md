@@ -129,7 +129,7 @@ Multiple channels can be subscribed together by providing a `Dict{String, Functi
 
 ```julia
 x = Any[]
-f(y) = push!(x, y)
+f(y::SubscriptionMessage) = push!(x, y)
 sub = open_subscription(conn)
 d = Dict{String, Function}({"baz" => f, "bar" => println})
 subscribe(sub, d)
@@ -140,7 +140,7 @@ publish(conn, "bar", "anything") # "anything" written to stdout
 
 Pattern subscription works in the same way through use of the `psubscribe` function. Channels can be unsubscribed through `unsubscribe` and `punsubscribe`.
 
-Note that the async event loop currently runs until the `SubscriptionConnection` is disconnected, regardless of how many subscriptions the client has active. Event loop error handling should be improved in an update to the API.
+Note that the event loop spawned with Threads.@spawn currently runs until the `SubscriptionConnection` is disconnected, regardless of how many subscriptions the client has active. Event loop error handling should be improved in an update to the API.
 
 ### Subscription error handling
 

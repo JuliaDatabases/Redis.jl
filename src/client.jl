@@ -145,7 +145,7 @@ end
 nullcb(err) = @debug err
 function open_subscription(conn::RedisConnection, err_callback=nullcb)
     s = SubscriptionConnection(conn)
-    @async subscription_loop(s, err_callback)
+    Threads.@spawn subscription_loop(s, err_callback)
     s
 end
 
@@ -157,9 +157,9 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
             reply = convert_reply(reply)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message
-                conn.callbacks[message.channel](message.message)
+                conn.callbacks[message.channel](message)
             elseif message.message_type == SubscriptionMessageType.Pmessage
-                conn.pcallbacks[message.channel](message.message)
+                conn.pcallbacks[message.channel](message)
             end
         catch err
             err_callback(err)

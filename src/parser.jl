@@ -88,7 +88,9 @@ end
 
 function execute_command_without_reply(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
-    pack_command(conn.socket, command)
+    lock(conn.socket.lock) do 
+        pack_command(conn.socket, command)
+    end
 end
 
 function execute_command(conn::RedisConnectionBase, command::Vector)
@@ -105,15 +107,15 @@ end
 struct SubscriptionMessage
     message_type
     channel::AbstractString
+    key::Union{AbstractString,Nothing}
     message::AbstractString
 
     function SubscriptionMessage(reply::AbstractArray)
-        notification = reply
-        message_type = notification[1]
+        message_type = reply[1]
         if message_type == "message"
-            new(SubscriptionMessageType.Message, notification[2], notification[3])
+            new(SubscriptionMessageType.Message, reply[2], nothing, reply[3])
         elseif message_type == "pmessage"
-            new(SubscriptionMessageType.Pmessage, notification[2], notification[4])
+            new(SubscriptionMessageType.Pmessage, reply[2], reply[3], reply[4])
         else
             new(SubscriptionMessageType.Other, "", "")
         end

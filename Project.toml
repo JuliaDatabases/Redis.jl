@@ -1,6 +1,6 @@
 name = "Redis"
 uuid = "0cf705f9-a9e2-50d1-a699-2b372a39b750"
-version = "0.2.0"
+version = "1.1.0"
 
 [deps]
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
@@ -8,7 +8,8 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 
 [compat]
-julia = "≥ 1.0.0"
+julia = "^1"
+DataStructures = "^0"
 
 [extras]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

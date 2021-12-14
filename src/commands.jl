@@ -86,9 +86,9 @@ end
 @redisfunction "hscan" Tuple{Integer, Dict{AbstractString, AbstractString}} key cursor::Integer options...
 
 # List commands
-@redisfunction "blpop" Array{AbstractString, 1} keys timeout
-@redisfunction "brpop" Array{AbstractString, 1} keys timeout
-@redisfunction "brpoplpush" AbstractString source destination timeout
+@redisfunction "blpop" Union{Array{AbstractString, 1}, Nothing} keys timeout
+@redisfunction "brpop" Union{Array{AbstractString, 1}, Nothing} keys timeout
+@redisfunction "brpoplpush" Union{AbstractString, Nothing} source destination timeout
 @redisfunction "lindex" Union{AbstractString, Nothing} key index
 @redisfunction "linsert" Integer key place pivot value
 @redisfunction "llen" Integer key

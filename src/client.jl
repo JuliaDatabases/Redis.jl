@@ -90,6 +90,14 @@ function convert_response(::Type{Union{T, Nothing}}, response) where {T <: Abstr
     return response
 end
 
+function convert_response(::Type{Union{Array{T, 1}, Nothing}}, response) where {T <: AbstractString}
+    if response == nothing
+        nothing
+    else
+        convert_response(Array{T, 1}, response)
+    end
+end
+
 # redundant
 function convert_response(::Type{Array{Union{T, Nothing}, 1}}, response) where {T<:Number}
     if response == nothing

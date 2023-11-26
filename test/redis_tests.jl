@@ -396,7 +396,7 @@ end
         return nothing
     end
     x = Any[]
-    function f(y::String)
+    function f(y::AbstractString)
         push!(x, y)
     end
     subs = open_subscription(conn, handleException) #handleException is called when an exception occurs

@@ -400,8 +400,8 @@ end
         push!(x, y)
     end
     subs = open_subscription(conn, handleException) #handleException is called when an exception occurs
-    subscribe(subs, "channel", f)
-    subscribe(subs, "duplicate", f)
+    subscribe_data(subs, "channel", f)
+    subscribe(subs, "duplicate", y->f(y.message))
     @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
     @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
     sleep(2)

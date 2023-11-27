@@ -116,11 +116,13 @@ publish(conn, "channel", "hello, world!")
 
 Subscriptions are handled using the `SubscriptionConnection`. Similar to the `TransactionConnection`, the `SubscriptionConnection` is constructed from an existing `RedisConnection`. Once created, the `SubscriptionConnection` maintains a simple event loop that will call the user's defined function whenever a message is received on the specified channel.
 
+If the `subscribe_data` method is used for subscription then the callback function will be passed the `message` field of `SubscriptionMessage` instance. If the `subscribe` method is used for subscription, the callback will be passed a `SubscriptionMessage` directly, which contains the channel, message type and key as well. 
+
 ```julia
 x = Any[]
 f(y) = push!(x, y)
 sub = open_subscription(conn)
-subscribe(sub, "baz", f)
+subscribe_data(sub, "baz", f)
 publish(conn, "baz", "foobar")
 x # Returns ["foobar"]
 ```
@@ -129,9 +131,9 @@ Multiple channels can be subscribed together by providing a `Dict{String, Functi
 
 ```julia
 x = Any[]
-f(y::SubscriptionMessage) = push!(x, y)
+f(y::SubscriptionMessage) = push!(x, y.message)
 sub = open_subscription(conn)
-d = Dict{String, Function}({"baz" => f, "bar" => println})
+d = Dict{String, Function}({"baz" => f, "bar" => y->println(y.message)})
 subscribe(sub, d)
 publish(conn, "baz", "foobar")
 x # Returns ["foobar"]

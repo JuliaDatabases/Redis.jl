@@ -286,14 +286,36 @@ function _subscribe(conn::SubscriptionConnection, channels::Array)
     execute_command_without_reply(conn, pushfirst!(channels, "subscribe"))
 end
 
+@enum CallbackType  CallbackMsgStruct = 1 CallbackMsgData = 2
+
+function _register_callback(conn::SubscriptionConnection, channel::AbstractString, callback::Function, callback_type::CallbackType)
+    if callback_type == CallbackMsgStruct
+        conn.callbacks[channel] = callback
+    elseif callback_type == CallbackMsgData
+        conn.callbacks[channel] = (msg_struct)->callback(msg_struct.message)
+    end
+end
+
 function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
-    conn.callbacks[channel] = callback
+    _register_callback(conn, channel, callback, CallbackMsgStruct)
     _subscribe(conn, [channel])
 end
 
 function subscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
     for (channel, callback) in subs
-        conn.callbacks[channel] = callback
+        _register_callback(conn, channel, callback, CallbackMsgStruct)
+    end
+    _subscribe(conn, collect(keys(subs)))
+end
+
+function subscribe_data(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
+    _register_callback(conn, channel, callback, CallbackMsgData)
+    _subscribe(conn, [channel])
+end
+
+function subscribe_data(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
+    for (channel, callback) in subs
+        _register_callback(conn, channel, callback, CallbackMsgData)
     end
     _subscribe(conn, collect(keys(subs)))
 end

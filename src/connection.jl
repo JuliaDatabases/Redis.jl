@@ -101,6 +101,10 @@ function SubscriptionConnection(parent::SubscribableConnection)
 end
 
 function on_connect(conn::RedisConnectionBase)
+    # disable nagle and enable quickack to speed up the usually small exchanges
+    Sockets.nagle(conn.socket, false)
+    Sockets.quickack(conn.socket, true)
+    
     conn.password != "" && auth(conn, conn.password)
     conn.db != 0        && select(conn, conn.db)
     conn

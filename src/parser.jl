@@ -88,8 +88,10 @@ end
 
 function execute_command_without_reply(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
-    lock(conn.socket.lock) do 
-        pack_command(conn.socket, command)
+    iob = IOBuffer()
+    pack_command(iob, command)
+    lock(conn.socket.lock) do
+        write(conn.socket, take!(iob))
     end
 end
 

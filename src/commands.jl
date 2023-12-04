@@ -287,35 +287,46 @@ function _subscribe(conn::SubscriptionConnection, channels::Array)
 end
 
 @enum CallbackType  CallbackMsgStruct = 1 CallbackMsgData = 2
+@enum SubscriptionType SubscriptionPlain = 1 SubscriptionPattern = 2
 
-function _register_callback(conn::SubscriptionConnection, channel::AbstractString, callback::Function, callback_type::CallbackType)
+function _register_callback(
+    conn::SubscriptionConnection,
+    channel::AbstractString,
+    subscription_type::SubscriptionType,
+    callback::Function,
+    callback_type::CallbackType,
+)
+    callbacks = subscription_type == SubscriptionPlain ? conn.callbacks :
+        subscription_type == SubscriptionPattern ? conn.pcallbacks :
+        error("Invalid callback type")
+
     if callback_type == CallbackMsgStruct
-        conn.callbacks[channel] = callback
+        callbacks[channel] = callback
     elseif callback_type == CallbackMsgData
-        conn.callbacks[channel] = (msg_struct)->callback(msg_struct.message)
+        callbacks[channel] = (msg_struct)->callback(msg_struct.message)
     end
 end
 
 function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
-    _register_callback(conn, channel, callback, CallbackMsgStruct)
+    _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgStruct)
     _subscribe(conn, [channel])
 end
 
-function subscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
+function subscribe(conn::SubscriptionConnection, subs::Dict)
     for (channel, callback) in subs
-        _register_callback(conn, channel, callback, CallbackMsgStruct)
+        _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgStruct)
     end
     _subscribe(conn, collect(keys(subs)))
 end
 
 function subscribe_data(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
-    _register_callback(conn, channel, callback, CallbackMsgData)
+    _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgData)
     _subscribe(conn, [channel])
 end
 
-function subscribe_data(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
+function subscribe_data(conn::SubscriptionConnection, subs::Dict)
     for (channel, callback) in subs
-        _register_callback(conn, channel, callback, CallbackMsgData)
+        _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgData)
     end
     _subscribe(conn, collect(keys(subs)))
 end
@@ -341,15 +352,27 @@ function _psubscribe(conn::SubscriptionConnection, patterns::Array)
 end
 
 function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
-    conn.pcallbacks[pattern] = callback
+    _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgStruct)
     _psubscribe(conn, [pattern])
 end
 
-function psubscribe(conn::SubscriptionConnection, subs::Dict{AbstractString, Function})
+function psubscribe(conn::SubscriptionConnection, subs::Dict)
     for (pattern, callback) in subs
-        conn.pcallbacks[pattern] = callback
+        _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgStruct)
     end
-    _psubscribe(conn, collect(values(subs)))
+    _psubscribe(conn, collect(keys(subs)))
+end
+
+function psubscribe_data(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
+    _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgData)
+    _psubscribe(conn, [pattern])
+end
+
+function psubscribe_data(conn::SubscriptionConnection, subs::Dict)
+    for (pattern, callback) in subs
+        _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgData)
+    end
+    _psubscribe(conn, collect(keys(subs)))
 end
 
 function punsubscribe(conn::SubscriptionConnection, patterns...)

@@ -133,7 +133,7 @@ Multiple channels can be subscribed together by providing a `Dict{String, Functi
 x = Any[]
 f(y::SubscriptionMessage) = push!(x, y.message)
 sub = open_subscription(conn)
-d = Dict{String, Function}({"baz" => f, "bar" => y->println(y.message)})
+d = Dict{String, Function}("baz" => f, "bar" => y->println(y.message))
 subscribe(sub, d)
 publish(conn, "baz", "foobar")
 x # Returns ["foobar"]

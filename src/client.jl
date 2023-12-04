@@ -165,9 +165,9 @@ function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
             reply = convert_reply(reply)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message
-                conn.callbacks[message.channel](message)
+                invokelatest(conn.callbacks[message.channel], message)
             elseif message.message_type == SubscriptionMessageType.Pmessage
-                conn.pcallbacks[message.channel](message)
+                invokelatest(conn.pcallbacks[message.channel], message)
             end
         catch err
             err_callback(err)

@@ -404,8 +404,9 @@ end
     subscribe(subs, "duplicate", y->f(y.message))
     @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
     @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
+    @test publish(conn, "duplicate", "hello world 2") > 0 #Number of connected clients returned
     sleep(2)
-    @test x == ["hello, world!", "Okay, bye!"]
+    @test x == ["hello, world!", "Okay, bye!", "hello world 2"]
 
     # following command prints ("Invalid response received: ")
     disconnect(subs)

@@ -395,18 +395,44 @@ end
         @warn "Error while processing subscription: $err"
         return nothing
     end
-    x = Any[]
-    function f(y::AbstractString)
-        push!(x, y)
+
+    string_matched_results = Any[]
+    pattern_matched_results = Any[]
+
+    function string_matched(y::AbstractString)
+        push!(string_matched_results, y)
     end
+
+    function pattern_matched(y::AbstractString)
+        push!(pattern_matched_results, y)
+    end
+
     subs = open_subscription(conn, handleException) #handleException is called when an exception occurs
-    subscribe_data(subs, "channel", f)
-    subscribe(subs, "duplicate", y->f(y.message))
-    @test publish(conn, "channel", "hello, world!") > 0 #Number of connected clients returned
-    @test publish(conn, "channel", "Okay, bye!") > 0 #Number of connected clients returned
-    @test publish(conn, "duplicate", "hello world 2") > 0 #Number of connected clients returned
-    sleep(2)
-    @test x == ["hello, world!", "Okay, bye!", "hello world 2"]
+
+    subscribe_data(subs, "1channel", string_matched)
+    psubscribe_data(subs, "1cha??el", pattern_matched)
+
+    subscribe(subs, "2channel", y->string_matched(y.message))
+    psubscribe(subs, "2chan*", y->pattern_matched(y.message))
+
+    subscribe_data(subs, Dict("3channel" => string_matched))
+    psubscribe_data(subs, Dict("3cha??el" => pattern_matched))
+
+    subscribe(subs, Dict("4channel" => y->string_matched(y.message)))
+    psubscribe(subs, Dict("4chan*" => y->pattern_matched(y.message)))
+
+    published_messages = ["hello, world1!", "hello, world 2!", "hello, world 3!", "hello, world 4!"]
+
+    for idx in 1:4
+        @test publish(conn, string(idx)*"channel", published_messages[idx]) > 0 #Number of connected clients returned
+    end
+
+    timedwait(5.0; pollint=1.0) do # wait for the messages to be received
+        length(string_matched_results) == 4 && length(pattern_matched_results) == 4        
+    end
+
+    @test string_matched_results == published_messages
+    @test pattern_matched_results == published_messages
 
     # following command prints ("Invalid response received: ")
     disconnect(subs)

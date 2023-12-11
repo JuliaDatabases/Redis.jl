@@ -45,7 +45,7 @@ export discard, exec, multi, unwatch, watch
 # Scripting commands
 export evalscript, evalsha, script_exists, script_flush, script_kill, script_load
 # PubSub commands
-export subscribe, subscribe_data, publish, psubscribe, punsubscribe, unsubscribe
+export subscribe, subscribe_data, publish, psubscribe, psubscribe_data, punsubscribe, unsubscribe
 # Server commands
 export bgrewriteaof, bgsave, client_list, client_id, client_pause, client_setname, cluster_slots,
        command, command_count, command_info, config_get, config_resetstat, config_rewrite,

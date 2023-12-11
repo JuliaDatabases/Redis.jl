@@ -26,7 +26,7 @@ const REDIS_EXPIRED_KEY =  -2
     @test del(conn, testkey, "notakey", "notakey2") == 1  # only 1 of 3 key exists
 
     # 'NIL'
-    @test get(conn, "notakey") == nothing
+    @test get(conn, "notakey") === nothing
 
     set(conn, testkey, s1)
     set(conn, testkey2, s2)
@@ -143,12 +143,12 @@ end
     @test lpush(conn, testkey, s1, s2, "a", "a", s3, s4) == 6
     @test lpop(conn, testkey) == s4
     @test rpop(conn, testkey) == s1
-    @test lpop(conn, "non_existent_list") == nothing
-    @test rpop(conn, "non_existent_list") == nothing
+    @test lpop(conn, "non_existent_list") === nothing
+    @test rpop(conn, "non_existent_list") === nothing
     @test llen(conn, testkey) == 4
-    @test lindex(conn, "non_existent_list", 1) == nothing
+    @test lindex(conn, "non_existent_list", 1) === nothing
     @test lindex(conn, testkey, 0) == s3
-    @test lindex(conn, testkey, 10) == nothing
+    @test lindex(conn, testkey, 10) === nothing
     @test lrem(conn, testkey, 0, "a") == 2
     @test lset(conn, testkey, 0, s5) == "OK"
     @test lindex(conn, testkey, 0) == s5
@@ -167,7 +167,7 @@ end
     for i in 1:3
         @test rpoplpush(conn, testkey, testkey2) == listvals[4-i]  # rpop
     end
-    @test rpoplpush(conn, testkey, testkey2) == nothing
+    @test rpoplpush(conn, testkey, testkey2) === nothing
     @test llen(conn, testkey) == 0
     @test llen(conn, testkey2) == 3
     @test lrange(conn, testkey2, 0, -1) == listvals
@@ -191,11 +191,11 @@ end
     @test hget(conn, testhash, 1) == "2"
     @test hgetall(conn, testhash) == Dict("1" => "2", "3" => "4", "5" => "6")
 
-    @test hget(conn, testhash, "non_existent_field") == nothing
+    @test hget(conn, testhash, "non_existent_field") === nothing
     @test hmget(conn, testhash, 1, 3) == ["2", "4"]
     a = hmget(conn, testhash, "non_existent_field1", "non_existent_field2")
-    @test a[1] == nothing
-    @test a[2] == nothing
+    @test a[1] === nothing
+    @test a[2] === nothing
 
     @test Set(hvals(conn, testhash)) == Set(["2", "4", "6"]) # use Set for comp as hash ordering is random
     @test Set(hkeys(conn, testhash)) == Set(["1", "3", "5"])
@@ -239,13 +239,13 @@ end
     @test sinterstore(conn, testkey3, testkey, testkey2) == 1
     # only the following method returns 'nil' if the Set does not exist
     @test srandmember(conn, testkey3) in Set([s1, s2, s3])
-    @test srandmember(conn, "empty_set") == nothing
+    @test srandmember(conn, "empty_set") === nothing
     # this method returns an emtpty Set if the the Set is empty
     @test issubset(srandmember(conn, testkey2, 2), Set([s1, s2, s3]))
     @test srandmember(conn, "non_existent_set", 10) == Set{AbstractString}()
     @test sdiff(conn, testkey, testkey2) == Set([s1])
     @test spop(conn, testkey) in Set([s1, s2, s3])
-    @test spop(conn, "empty_set") == nothing
+    @test spop(conn, "empty_set") === nothing
     del(conn, testkey, testkey2, testkey3)
 end
 
@@ -287,7 +287,7 @@ end
     @test zrank(conn, testkey, "d") == 3 # redis arrays 0-base
 
     # 'NIL'
-    @test zrank(conn, testkey, "z") == nothing
+    @test zrank(conn, testkey, "z") === nothing
     del(conn, testkey)
 
     zadd(conn, testkey, zip(1:length(vals), vals)...)
@@ -301,9 +301,9 @@ end
     @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
     @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
     @test zrevrank(conn, testkey, "e") == 5
-    @test zrevrank(conn, "ordered_set", "non_existent_member") == nothing
+    @test zrevrank(conn, "ordered_set", "non_existent_member") === nothing
     @test zscore(conn, testkey, "e") == "5"
-    @test zscore(conn, "ordered_set", "non_existent_member") == nothing
+    @test zscore(conn, "ordered_set", "non_existent_member") === nothing
     del(conn, testkey)
 
     vals2 = ["a", "b", "c", "d"]

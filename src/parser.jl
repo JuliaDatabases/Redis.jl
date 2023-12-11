@@ -23,7 +23,7 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
     b = read(s, slen+2) # add crlf
     if length(b) != slen + 2
         throw(ProtocolException(
-            "Bulk string read error: expected $len bytes; received $(length(b))"
+            "Bulk string read error: expected $slen bytes; received $(length(b))"
         ))
     else
         return resize!(b, slen)

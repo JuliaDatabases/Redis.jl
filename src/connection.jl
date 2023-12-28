@@ -1,5 +1,3 @@
-import Sockets.connect, Sockets.TCPSocket, Base.StatusActive, Base.StatusOpen, Base.StatusPaused
-
 abstract type RedisConnectionBase end
 abstract type SubscribableConnection<:RedisConnectionBase end
 
@@ -8,7 +6,7 @@ struct RedisConnection <: SubscribableConnection
     port::Integer
     password::AbstractString
     db::Integer
-    socket::TCPSocket
+    transport::Transport.RedisTransport
 end
 
 struct SentinelConnection <: SubscribableConnection
@@ -16,7 +14,7 @@ struct SentinelConnection <: SubscribableConnection
     port::Integer
     password::AbstractString
     db::Integer
-    socket::TCPSocket
+    transport::Transport.RedisTransport
 end
 
 struct TransactionConnection <: RedisConnectionBase
@@ -24,7 +22,7 @@ struct TransactionConnection <: RedisConnectionBase
     port::Integer
     password::AbstractString
     db::Integer
-    socket::TCPSocket
+    transport::Transport.RedisTransport
 end
 
 mutable struct PipelineConnection <: RedisConnectionBase
@@ -32,7 +30,7 @@ mutable struct PipelineConnection <: RedisConnectionBase
     port::Integer
     password::AbstractString
     db::Integer
-    socket::TCPSocket
+    transport::Transport.RedisTransport
     num_commands::Integer
 end
 
@@ -43,57 +41,83 @@ struct SubscriptionConnection <: RedisConnectionBase
     db::Integer
     callbacks::Dict{AbstractString, Function}
     pcallbacks::Dict{AbstractString, Function}
-    socket::TCPSocket
+    transport::Transport.RedisTransport
 end
 
-function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0)
+Transport.get_sslconfig(s::RedisConnectionBase) = Transport.get_sslconfig(s.transport)
+
+function RedisConnection(; host="127.0.0.1", port=6379, password="", db=0, sslconfig=nothing)
     try
-        socket = connect(host, port)
-        connection = RedisConnection(host, port, password, db, socket)
+        connection = RedisConnection(
+            host,
+            port,
+            password,
+            db,
+            Transport.transport(host, port, sslconfig)
+        )
         on_connect(connection)
     catch
         throw(ConnectionException("Failed to connect to Redis server"))
     end
 end
 
-function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0)
+function SentinelConnection(; host="127.0.0.1", port=26379, password="", db=0, sslconfig=nothing)
     try
-        socket = connect(host, port)
-        sentinel_connection = SentinelConnection(host, port, password, db, socket)
+        sentinel_connection = SentinelConnection(
+            host,
+            port,
+            password,
+            db,
+            Transport.transport(host, port, sslconfig)
+        )
         on_connect(sentinel_connection)
     catch
         throw(ConnectionException("Failed to connect to Redis sentinel"))
     end
 end
 
-function TransactionConnection(parent::RedisConnection)
+function TransactionConnection(parent::RedisConnection; sslconfig=Transport.get_sslconfig(parent))
     try
-        socket = connect(parent.host, parent.port)
-        transaction_connection = TransactionConnection(parent.host,
-            parent.port, parent.password, parent.db, socket)
+        transaction_connection = TransactionConnection(
+            parent.host,
+            parent.port,
+            parent.password,
+            parent.db,
+            Transport.transport(parent.host, parent.port, sslconfig)
+        )
         on_connect(transaction_connection)
     catch
         throw(ConnectionException("Failed to create transaction"))
     end
 end
 
-function PipelineConnection(parent::RedisConnection)
+function PipelineConnection(parent::RedisConnection; sslconfig=Transport.get_sslconfig(parent))
     try
-        socket = connect(parent.host, parent.port)
-        pipeline_connection = PipelineConnection(parent.host,
-            parent.port, parent.password, parent.db, socket, 0)
+        pipeline_connection = PipelineConnection(
+            parent.host,
+            parent.port,
+            parent.password,
+            parent.db,
+            Transport.transport(parent.host, parent.port, sslconfig),
+            0
+        )
         on_connect(pipeline_connection)
     catch
         throw(ConnectionException("Failed to create pipeline"))
     end
 end
 
-function SubscriptionConnection(parent::SubscribableConnection)
+function SubscriptionConnection(parent::SubscribableConnection; sslconfig=Transport.get_sslconfig(parent))
     try
-        socket = connect(parent.host, parent.port)
-        subscription_connection = SubscriptionConnection(parent.host,
-            parent.port, parent.password, parent.db, Dict{AbstractString, Function}(),
-            Dict{AbstractString, Function}(), socket)
+        subscription_connection = SubscriptionConnection(
+            parent.host,
+            parent.port,
+            parent.password,
+            parent.db,
+            Dict{AbstractString, Function}(),
+            Dict{AbstractString, Function}(),
+            Transport.transport(parent.host, parent.port, sslconfig)
+        )
         on_connect(subscription_connection)
     catch
         throw(ConnectionException("Failed to create subscription"))
@@ -101,19 +125,16 @@ function SubscriptionConnection(parent::SubscribableConnection)
 end
 
 function on_connect(conn::RedisConnectionBase)
-    # disable nagle and enable quickack to speed up the usually small exchanges
-    Sockets.nagle(conn.socket, false)
-    Sockets.quickack(conn.socket, true)
-    
+    Transport.set_props!(conn.transport)
     conn.password != "" && auth(conn, conn.password)
     conn.db != 0        && select(conn, conn.db)
     conn
 end
 
 function disconnect(conn::RedisConnectionBase)
-    close(conn.socket)
+    Transport.close(conn.transport)
 end
 
 function is_connected(conn::RedisConnectionBase)
-    conn.socket.status == StatusActive || conn.socket.status == StatusOpen || conn.socket.status == StatusPaused
+    Transport.is_connected(conn.transport)
 end

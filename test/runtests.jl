@@ -16,5 +16,4 @@ client_tests()
 redis_tests(RedisConnection())
 
 # TLS connection
-# TODO: enable after updating github CI configuration
-# redis_tests(RedisConnection(; port=16379, sslconfig=client_tls_config("certs/ca.crt")))
+redis_tests(RedisConnection(; port=16379, sslconfig=client_tls_config(joinpath(@__DIR__, "certs", "ca.crt"))))

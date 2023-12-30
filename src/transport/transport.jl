@@ -1,16 +1,15 @@
 """
-    Transport module for Redis.jl abstractes the connection to the Redis server.
+    Transport module for Redis.jl abstracts the connection to the Redis server.
 
-Each transportimplementation must provide the following methods:
-- `read_line(t::RedisTransport)`: read one line from the transport, similar to `readline`
-- `read_nbytes(t::RedisTransport, m::Int)`: read `m` bytes from the transport, similar to `read`
-- `write_bytes(t::RedisTransport, b::Vector{UInt8})`: write bytes to the transport, similar to `write`
-- `close(t::RedisTransport)`
-- `is_connected(t::RedisTransport)`: whether the transport is connected or not
-- `status(t::RedisTransport)`: status of the transport, whether it is connected or not
-- `set_props!(t::RedisTransport)`: set any properties required. For example, disable nagle and enable quickack to speed up the usually small exchanges
-- `get_sslconfig(t::RedisTransport)`: get the SSL configuration for the transport if applicable
-- `io_lock(f, t::RedisTransport)`: lock the transport for IO operations
+Each transport implementation must provide the following methods:
+- `read_line(t::RedisTransport)`: Read one line from the transport, similar to `readline`. Return a `String`.
+- `read_nbytes(t::RedisTransport, m::Int)`: Read `m` bytes from the transport, similar to `read`. Return a `Vector{UInt8}`.
+- `write_bytes(t::RedisTransport, b::Vector{UInt8})`: Write bytes to the transport, similar to `write`. Return the number of bytes written.
+- `close(t::RedisTransport)`: Close the transport. Return `nothing`.
+- `is_connected(t::RedisTransport)`: Whether the transport is connected or not. Return a boolean.
+- `set_props!(t::RedisTransport)`: Set any properties required. For example, disable nagle and enable quickack to speed up the usually small exchanges. Return `nothing`.
+- `get_sslconfig(t::RedisTransport)`: Get the SSL configuration for the transport if applicable. Return a `MbedTLS.SSLConfig` or `nothing`.
+- `io_lock(f, t::RedisTransport)`: Lock the transport for IO operations and execute `f`. Return the result of `f`.
 
 """
 module Transport

@@ -160,8 +160,8 @@ end
 function subscription_loop(conn::SubscriptionConnection, err_callback::Function)
     while is_connected(conn)
         try
-            l = getline(conn.socket)
-            reply = parseline(l, conn.socket)
+            l = getline(conn.transport)
+            reply = parseline(l, conn.transport)
             reply = convert_reply(reply)
             message = SubscriptionMessage(reply)
             if message.message_type == SubscriptionMessageType.Message

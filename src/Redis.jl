@@ -1,6 +1,7 @@
 module Redis
 using Dates
 using Sockets
+using MbedTLS
 
 import Base.get, Base.keys, Base.time
 
@@ -59,6 +60,7 @@ export sentinel_masters, sentinel_master, sentinel_slaves, sentinel_getmasteradd
 export REDIS_PERSISTENT_KEY, REDIS_EXPIRED_KEY
 
 include("exceptions.jl")
+include("transport/transport.jl")
 include("connection.jl")
 include("parser.jl")
 include("client.jl")

@@ -6,10 +6,12 @@ version = "2.0.0"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
+MbedTLS = "739be429-bea8-5141-9913-cc70e7f3736d"
 
 [compat]
 julia = "^1"
 DataStructures = "^0.18"
+MbedTLS = "0.6.8, 0.7, 1"
 
 [extras]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"

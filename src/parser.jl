@@ -1,8 +1,8 @@
 """
 Formatting of incoming Redis Replies
 """
-function getline(s::TCPSocket)
-    l = chomp(readline(s))
+function getline(t::Transport.RedisTransport)
+    l = chomp(Transport.read_line(t))
     length(l) > 1 || throw(ProtocolException("Invalid response received: $l"))
     return l
 end
@@ -12,15 +12,15 @@ convert_reply(reply::Array) = [convert_reply(r) for r in reply]
 convert_reply(x) = x
 
 function read_reply(conn::RedisConnectionBase)
-    l = getline(conn.socket)
-    reply = parseline(l, conn.socket)
+    l = getline(conn.transport)
+    reply = parseline(l, conn.transport)
     convert_reply(reply)
 end
 
 parse_error(l::AbstractString) = throw(ServerException(l))
 
-function parse_bulk_string(s::TCPSocket, slen::Int)
-    b = read(s, slen+2) # add crlf
+function parse_bulk_string(t::Transport.RedisTransport, slen::Int)
+    b = Transport.read_nbytes(t, slen+2) # add crlf
     if length(b) != slen + 2
         throw(ProtocolException(
             "Bulk string read error: expected $slen bytes; received $(length(b))"
@@ -30,17 +30,17 @@ function parse_bulk_string(s::TCPSocket, slen::Int)
     end
 end
 
-function parse_array(s::TCPSocket, slen::Int)
+function parse_array(t::Transport.RedisTransport, slen::Int)
     a = Array{Any, 1}(undef, slen)
     for i = 1:slen
-        l = getline(s)
-        r = parseline(l, s)
+        l = getline(t)
+        r = parseline(l, t)
         a[i] = r
     end
     return a
 end
 
-function parseline(l::AbstractString, s::TCPSocket)
+function parseline(l::AbstractString, t::Transport.RedisTransport)
     reply_type = l[1]
     reply_token = l[2:end]
     if reply_type == '+'
@@ -52,14 +52,14 @@ function parseline(l::AbstractString, s::TCPSocket)
         if slen == -1
             nothing
         else
-            parse_bulk_string(s, slen)
+            parse_bulk_string(t, slen)
         end
     elseif reply_type == '*'
         slen = parse(Int, reply_token)
         if slen == -1
             nothing
         else
-            parse_array(s, slen)
+            parse_array(t, slen)
         end
     elseif reply_type == '-'
         parse_error(reply_token)
@@ -90,8 +90,8 @@ function execute_command_without_reply(conn::RedisConnectionBase, command)
     is_connected(conn) || throw(ConnectionException("Socket is disconnected"))
     iob = IOBuffer()
     pack_command(iob, command)
-    lock(conn.socket.lock) do
-        write(conn.socket, take!(iob))
+    Transport.io_lock(conn.transport) do
+        Transport.write_bytes(conn.transport, take!(iob))
     end
 end
 

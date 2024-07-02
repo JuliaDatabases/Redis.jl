@@ -50,7 +50,11 @@ function convert_eval_response(::Any, response::Array)
     return [String(r) for r in response]
 end
 function convert_eval_response(::Any, response)
-    return String(response)
+    if response === nothing
+        return nothing
+    else
+        return String(response)
+    end
 end
 
 # import Base: ==

@@ -46,17 +46,6 @@ function convert_response(::Type{Dict{AbstractString, AbstractString}}, response
     retdict
 end
 
-function convert_eval_response(::Any, response::Array)
-    return [String(r) for r in response]
-end
-function convert_eval_response(::Any, response)
-    if response === nothing
-        return nothing
-    else
-        return String(response)
-    end
-end
-
 # import Base: ==
 # ==(A::Union{T, Nothing}, B::Union{U, Nothing}) where {T<:AbstractString, U<:AbstractString} = A == B
 # ==(A::Union{T, Nothing}, B::Union{U, Nothing}) where {T<:Number, U<:Number} = A == B

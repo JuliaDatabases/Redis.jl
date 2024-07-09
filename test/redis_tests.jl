@@ -344,6 +344,13 @@ function redis_tests(conn = RedisConnection())
         @test resp == "OK"
         del(conn, ky)
 
+        script = "return {10,20}"
+        resp = evalscript(conn, script, 0, [])
+        @test resp == [10, 20]
+
+        script = "return"
+        resp = evalscript(conn, script, 0, [])
+        @test resp === nothing
 
     #@test evalscript(conn, "return {'1','2',{'3','Hello World!'}}", 0, []) == ["1"; "2"; ["3","Hello World!"]]
 

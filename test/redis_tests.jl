@@ -333,23 +333,24 @@ function redis_tests(conn = RedisConnection())
 
     @testset "Scripting" begin
         script = "return {KEYS[1], KEYS[2], ARGV[1], ARGV[2]}"
-        args = ["key1", "key2", "first", "second"]
-        resp = evalscript(conn, script, 2, args)
-        @test resp == args
+        keys = ["key1", "key2"]
+        args = ["first", "second"]
+        resp = evalscript(conn, script, 2, keys, args)
+        @test resp == vcat(keys, args)
         del(conn, "key1")
 
         script = "return redis.call('set', KEYS[1], 'bar')"
         ky = "foo"
-        resp = evalscript(conn, script, 1, [ky])
+        resp = evalscript(conn, script, 1, [ky], [])
         @test resp == "OK"
         del(conn, ky)
 
         script = "return {10,20}"
-        resp = evalscript(conn, script, 0, [])
+        resp = evalscript(conn, script, 0, [], [])
         @test resp == [10, 20]
 
         script = "return"
-        resp = evalscript(conn, script, 0, [])
+        resp = evalscript(conn, script, 0, [], [])
         @test resp === nothing
 
     #@test evalscript(conn, "return {'1','2',{'3','Hello World!'}}", 0, []) == ["1"; "2"; ["3","Hello World!"]]

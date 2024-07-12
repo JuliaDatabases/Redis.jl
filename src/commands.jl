@@ -213,8 +213,8 @@ end
 
 # Scripting commands
 # TODO: PipelineConnection and TransactionConnection
-function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
-    response = execute_command(conn, flatten_command("eval", script, numkeys, args))
+function evalscript(conn::RedisConnection, script, numkeys::Integer, keys, args)
+    response = execute_command(conn, flatten_command("eval", script, numkeys, keys, args))
     return response
 end
 

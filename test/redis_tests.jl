@@ -378,6 +378,8 @@ function redis_tests(conn = RedisConnection())
         @test exec(trans) == ["OK", "foobar"]
         @test del(trans, testkey) == "QUEUED"
         @test exec(trans) == [true]
+        @test evalscript(trans, "return", 0, [], []) == "QUEUED"
+        @test exec(trans) == [nothing]
         disconnect(trans)
     end
 
@@ -385,14 +387,21 @@ function redis_tests(conn = RedisConnection())
         pipe = open_pipeline(conn)
         set(pipe, testkey3, "anything")
         @test length(read_pipeline(pipe)) == 1
+
         get(pipe, testkey3)
         set(pipe, testkey4, "testing")
         result = read_pipeline(pipe)
         @test length(result) == 2
         @test result == ["anything", "OK"]
+
         @test del(pipe, testkey3) == 1
         @test del(pipe, testkey4) == 2
-        @test result ==  ["anything", "OK"]
+        result = read_pipeline(pipe)
+        @test result ==  [1, 1]
+
+        evalscript(pipe, "return", 0, [], [])
+        result = read_pipeline(pipe)
+        @test result == []
         disconnect(pipe)
     end
 

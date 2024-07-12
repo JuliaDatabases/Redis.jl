@@ -215,7 +215,7 @@ end
 # TODO: PipelineConnection and TransactionConnection
 function evalscript(conn::RedisConnection, script, numkeys::Integer, args)
     response = execute_command(conn, flatten_command("eval", script, numkeys, args))
-    convert_eval_response(Any, response)
+    return response
 end
 
 #################################################################

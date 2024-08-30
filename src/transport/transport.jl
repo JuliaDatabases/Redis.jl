@@ -26,7 +26,7 @@ include("tcp.jl")
 
 function transport(host::AbstractString, port::Integer, sslconfig::Union{MbedTLS.SSLConfig, Nothing}=nothing)
     socket = connect(host, port)
-    return (sslconfig !== nothing) ? TLSTransport(socket, sslconfig) : TCPTransport(socket)
+    return (sslconfig !== nothing) ? TLSTransport(host, socket, sslconfig) : TCPTransport(socket)
 end
 
 end # module Transport

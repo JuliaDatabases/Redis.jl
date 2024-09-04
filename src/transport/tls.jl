@@ -4,10 +4,16 @@ struct TLSTransport <: RedisTransport
     sslconfig::MbedTLS.SSLConfig
     buff::IOBuffer
 
-    function TLSTransport(sock::TCPSocket, sslconfig::MbedTLS.SSLConfig)
+    function TLSTransport(host::AbstractString, sock::TCPSocket, sslconfig::MbedTLS.SSLConfig)
         ctx = MbedTLS.SSLContext()
         MbedTLS.setup!(ctx, sslconfig)
         MbedTLS.associate!(ctx, sock)
+        # set hostname only if it's not an IP adress
+        try
+          parse(IPAddr, host)
+        catch x
+          MbedTLS.hostname!(ctx, host)
+        end
         MbedTLS.handshake(ctx)
 
         return new(sock, ctx, sslconfig, PipeBuffer())

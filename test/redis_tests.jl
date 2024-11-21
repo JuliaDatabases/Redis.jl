@@ -325,6 +325,16 @@ function redis_tests(conn = RedisConnection())
         vals2 = ["a", "b", "c", "d"]
         @test zinterstore(conn, testkey3, 2, [testkey, testkey2]) == 4
         del(conn, testkey, testkey2, testkey3)
+
+        # test using bzpopmin
+        vals2 = ["a", "b", "c", "d"]
+        zadd(conn, testkey, zip([4, 2, 1, 3], vals2)...)
+        @test bzpopmin(conn, testkey, 0) == [testkey, "c", "1"]
+        @test bzpopmin(conn, testkey, 0) == [testkey, "b", "2"]
+        @test bzpopmin(conn, testkey, 0) == [testkey, "d", "3"]
+        @test bzpopmin(conn, testkey, 0) == [testkey, "a", "4"]
+        @test bzpopmin(conn, testkey, 0.1) == nothing
+        del(conn, testkey)
     end
 
     @testset "Scan" begin

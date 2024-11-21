@@ -164,6 +164,8 @@ resorting to the use of `Dict`, which cannot be used in the case where all entri
 # number), represented as string.
 @redisfunction "zscore" Union{AbstractString, Nothing} key member
 @redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
+# bzpopmin returns [key, data, score] or nothing if timeout is reached
+@redisfunction "bzpopmin" Union{Array{AbstractString, 1}, Nothing} keys timeout
 
 function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)
     length(keys) > 0 || throw(ClientException("Must supply at least one key"))

@@ -35,7 +35,7 @@ export sadd, scard, sdiff, sdiffstore, sinter, sinterstore,
 export zadd, zcard, zcount, zincrby, zinterstore, zlexcount,
        zrange, zrangebylex, zrangebyscore, zrank, zrem,
        zremrangebylex, zremrangebyrank, zremrangebyscore, zrevrange,
-       zrevrangebyscore, zrevrank, zscore, zunionstore, zscan,
+       zrevrangebyscore, zrevrank, zscore, zunionstore, zscan, bzpopmin,
        Aggregate
 # HyperLogLog commands
 export pfadd, pfcount, pfmerge

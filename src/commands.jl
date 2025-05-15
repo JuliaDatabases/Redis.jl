@@ -1,405 +1,359 @@
-import DataStructures.OrderedSet
+module Commands
 
-const EXEC = ["exec"]
+export Command, set, mset, append, incrby, get, mget, del, scan, zrange, zadd, zcard, zrem, zrevrangebyscore, zremrangebyrank, zrevrange, zscan, xadd, xdel, xrange, xtrim, sadd, srem, scard, sscan, smembers, multi, exec, discard, expire, publish, hdel, hget, hlen, hset, hscan, rpush, lindex, lpush, ltrim, lrange, lrem, geoadd, geodist, geohash, geopos, geosearch, georadius
 
-baremodule Aggregate
-    const NotSet = ""
-    const Sum = "sum"
-    const Min = "min"
-    const Max = "max"
+struct Command
+    cmd::String
 end
 
-# Key commands
-@redisfunction "del" Integer key...
-@redisfunction "dump" AbstractString key
-@redisfunction "exists" Bool key
-@redisfunction "expire" Bool key seconds
-@redisfunction "expireat" Bool key timestamp
-@redisfunction "keys" Set{AbstractString} pattern
-@redisfunction "migrate" Bool host port key destinationdb timeout
-@redisfunction "move" Bool key db
-@redisfunction "persist" Bool key
-@redisfunction "pexpire" Bool key milliseconds
-@redisfunction "pexpireat" Bool key millisecondstimestamp
-@redisfunction "pttl" Integer key
-@redisfunction "randomkey" Union{AbstractString, Nothing}
-@redisfunction "rename" AbstractString key newkey
-@redisfunction "renamenx" Bool key newkey
-@redisfunction "restore" Bool key ttl serializedvalue
-@redisfunction "scan" Tuple{Integer, Array{AbstractString, 1}} cursor::Integer options...
-@redisfunction "sort" Array{AbstractString, 1} key options...
-@redisfunction "ttl" Integer key
-function keytype(conn::RedisConnection, key)
-    response = execute_command(conn, flatten_command("type", key))
-    convert_response(AbstractString, response)
-end
-function keytype(conn::TransactionConnection, key)
-    execute_command(conn, flatten_command("type", key))
-end
-
-# String commands
-@redisfunction "append" Integer key value
-@redisfunction "bitcount" Integer key options...
-@redisfunction "bitop" Integer operation destkey key keys...
-@redisfunction "bitpos" Integer key bit options...
-@redisfunction "decr" Integer key
-@redisfunction "decrby" Integer key decrement
-@redisfunction "get" Union{String, Nothing} key
-@redisfunction "getbit" Integer key offset
-@redisfunction "getrange" AbstractString key start finish
-@redisfunction "getset" AbstractString key value
-@redisfunction "incr" Integer key
-@redisfunction "incrby" Integer key increment::Integer
-
-# Bulk string reply: the value of key after the increment,
-# as per http://redis.io/commands/incrbyfloat
-@redisfunction "incrbyfloat" AbstractString key increment::Float64
-@redisfunction "mget" Array{Union{AbstractString, Nothing}, 1} key keys...
-@redisfunction "mset" Bool keyvalues
-@redisfunction "msetnx" Bool keyvalues
-@redisfunction "psetex" AbstractString key milliseconds value
-@redisfunction "set" Bool key value options...
-@redisfunction "setbit" Integer key offset value
-@redisfunction "setex" AbstractString key seconds value
-@redisfunction "setnx" Bool key value
-@redisfunction "setrange" Integer key offset value
-@redisfunction "strlen" Integer key
-
-# Hash commands
-@redisfunction "hdel" Integer key field fields...
-@redisfunction "hexists" Bool key field
-@redisfunction "hget" Union{AbstractString, Nothing} key field
-@redisfunction "hgetall" Dict{AbstractString, AbstractString} key
-@redisfunction "hincrby" Integer key field increment::Integer
-
-# Bulk string reply: the value of key after the increment,
-# as per http://redis.io/commands/hincrbyfloat
-@redisfunction "hincrbyfloat" AbstractString key field increment::Float64
-
-@redisfunction "hkeys" Array{AbstractString, 1} key
-@redisfunction "hlen" Integer key
-@redisfunction "hmget" Array{Union{AbstractString, Nothing}, 1} key field fields...
-@redisfunction "hmset" Bool key value
-@redisfunction "hset" Bool key field value
-@redisfunction "hsetnx" Bool key field value
-@redisfunction "hvals" Array{AbstractString, 1} key
-@redisfunction "hscan" Tuple{Integer, Dict{AbstractString, AbstractString}} key cursor::Integer options...
-
-# List commands
-@redisfunction "blpop" Union{Array{AbstractString, 1}, Nothing} keys timeout
-@redisfunction "brpop" Union{Array{AbstractString, 1}, Nothing} keys timeout
-@redisfunction "brpoplpush" Union{AbstractString, Nothing} source destination timeout
-@redisfunction "lindex" Union{AbstractString, Nothing} key index
-@redisfunction "linsert" Integer key place pivot value
-@redisfunction "llen" Integer key
-@redisfunction "lpop" Union{AbstractString, Nothing} key
-@redisfunction "lpush" Integer key value values...
-@redisfunction "lpushx" Integer key value
-@redisfunction "lrange" Array{AbstractString, 1} key start finish
-@redisfunction "lrem" Integer key count value
-@redisfunction "lset" AbstractString key index value
-@redisfunction "ltrim" AbstractString key start finish
-@redisfunction "rpop" Union{AbstractString, Nothing} key
-@redisfunction "rpoplpush" Union{AbstractString, Nothing} source destination
-@redisfunction "rpush" Integer key value values...
-@redisfunction "rpushx" Integer key value
-
-# Set commands
-@redisfunction "sadd" Integer key member members...
-@redisfunction "scard" Integer key
-@redisfunction "sdiff" Set{AbstractString} key keys...
-@redisfunction "sdiffstore" Integer destination key keys...
-@redisfunction "sinter" Set{AbstractString} key keys...
-@redisfunction "sinterstore" Integer destination key keys...
-@redisfunction "sismember" Bool key member
-@redisfunction "smembers" Set{AbstractString} key
-@redisfunction "smove" Bool source destination member
-@redisfunction "spop" Union{AbstractString, Nothing} key
-@redisfunction "srandmember" Union{AbstractString, Nothing} key
-@redisfunction "srandmember" Set{AbstractString} key count
-@redisfunction "srem" Integer key member members...
-@redisfunction "sunion" Set{AbstractString} key keys...
-@redisfunction "sunionstore" Integer destination key keys...
-@redisfunction "sscan" Set{AbstractString} key cursor::Integer options...
-
-# Sorted set commands
-#=
-merl-dev: a number of methods were added to take AbstractString for score value
-to enable score ranges like '(1 2,' or "-inf", "+inf",
-as per docs http://redis.io/commands/zrangebyscore
-=#
-
-@redisfunction "zadd" Integer key score::Number member::AbstractString
-
-# NOTE:  using ZADD with Dicts could introduce bugs if some scores are identical
-@redisfunction "zadd" Integer key scorememberdict
-
-#=
-This following version of ZADD enables adding new members using `Tuple{Int64, AbstractString}` or
-`Tuple{Float64, AbstractString}` for single or multiple additions to the sorted set without
-resorting to the use of `Dict`, which cannot be used in the case where all entries have the same score.
-=#
-@redisfunction "zadd" Integer key scoremembertup scorememberstup...
-
-@redisfunction "zcard" Integer key
-@redisfunction "zcount" Integer key min max
-
-# Bulk string reply: the new score of member (a double precision floating point number),
-# represented as string, as per http://redis.io/commands/zincrby
-@redisfunction "zincrby" AbstractString key increment member
-
-@redisfunction "zlexcount" Integer key min max
-@redisfunction "zrange" OrderedSet{AbstractString} key start finish options...
-@redisfunction "zrangebylex" OrderedSet{AbstractString} key min max options...
-@redisfunction "zrangebyscore" OrderedSet{AbstractString} key min max options...
-@redisfunction "zrank" Union{Integer, Nothing} key member
-@redisfunction "zrem" Integer key member members...
-@redisfunction "zremrangebylex" Integer key min max
-@redisfunction "zremrangebyrank" Integer key start finish
-@redisfunction "zremrangebyscore" Integer key start finish
-@redisfunction "zrevrange" OrderedSet{AbstractString} key start finish options...
-@redisfunction "zrevrangebyscore" OrderedSet{AbstractString} key start finish options...
-@redisfunction "zrevrank" Union{Integer, Nothing} key member
-# ZCORE returns a Bulk string reply: the score of member (a double precision floating point
-# number), represented as string.
-@redisfunction "zscore" Union{AbstractString, Nothing} key member
-@redisfunction "zscan" Set{AbstractString} key cursor::Integer options...
-# bzpopmin returns [key, data, score] or nothing if timeout is reached
-@redisfunction "bzpopmin" Union{Array{AbstractString, 1}, Nothing} keys timeout
-
-function _build_store_internal(destination, numkeys, keys, weights, aggregate, command)
-    length(keys) > 0 || throw(ClientException("Must supply at least one key"))
-    suffix = []
-    if length(weights) > 0
-        suffix = map(string, weights)
-        pushfirst!(suffix, "weights")
+function set(key::AbstractString, value::AbstractString; nx::Bool=false, xx::Bool=false, ex::Int=0, px::Int=0)
+    narg = 3 + nx + xx + (ex > 0 ? 2 : 0) + (px > 0 ? 2 : 0)
+    command = "*$narg\r\n\$3\r\nSET\r\n\$$(sizeof(key))\r\n$key\r\n\$$(sizeof(value))\r\n$value\r\n"
+    if nx
+        command *= "\$2\r\nNX\r\n"
     end
-    if aggregate != Aggregate.NotSet
-        push!(suffix, "aggregate")
-        push!(suffix, aggregate)
+    if xx
+        command *= "\$2\r\nXX\r\n"
     end
-    vcat([command, destination, numkeys], keys, suffix)
-end
-
-# TODO: PipelineConnection and TransactionConnection
-function zinterstore(conn::RedisConnectionBase, destination, numkeys,
-    keys::Array, weights=[]; aggregate=Aggregate.NotSet)
-    command = _build_store_internal(destination, numkeys, keys, weights, aggregate, "zinterstore")
-    execute_command(conn, command)
-end
-
-function zunionstore(conn::RedisConnectionBase, destination, numkeys::Integer,
-    keys::Array, weights=[]; aggregate=Aggregate.NotSet)
-    command = _build_store_internal(destination, numkeys, keys, weights, aggregate, "zunionstore")
-    execute_command(conn, command)
-end
-
-# HyperLogLog commands
-@redisfunction "pfadd" Bool key element elements...
-@redisfunction "pfcount" Integer key keys...
-@redisfunction "pfmerge" Bool destkey sourcekey sourcekeys...
-
-# Connection commands
-@redisfunction "auth" AbstractString password
-@redisfunction "echo" AbstractString message
-@redisfunction "ping" AbstractString
-@redisfunction "quit" Bool
-@redisfunction "select" AbstractString index
-
-# Transaction commands
-@redisfunction "discard" Bool
-@redisfunction "exec" Array{Bool} # only one element ever in this array?
-@redisfunction "multi" Bool
-@redisfunction "unwatch" Bool
-@redisfunction "watch" Bool key keys...
-
-# Scripting commands
-function evalscript(conn::Union{RedisConnection,PipelineConnection,TransactionConnection}, script, numkeys::Integer, keys, args)
-    response = execute_command(conn, flatten_command("eval", script, numkeys, keys, args))
-    return response
-end
-
-#################################################################
-# TODO: NEED TO TEST BEYOND THIS POINT
-@redisfunction "evalsha" Any sha1 numkeys keys args
-@redisfunction "script_exists" Array script scripts...
-@redisfunction "script_flush" AbstractString
-@redisfunction "script_kill" AbstractString
-@redisfunction "script_load" AbstractString script
-
-# Server commands
-@redisfunction "bgrewriteaof" Bool
-@redisfunction "bgsave" AbstractString
-@redisfunction "client_getname" AbstractString
-@redisfunction "client_id" Integer
-@redisfunction "client_list" AbstractString
-@redisfunction "client_pause" Bool timeout
-@redisfunction "client_setname" Bool name
-@redisfunction "cluster_slots" Array
-@redisfunction "command" Array
-@redisfunction "command_count" Integer
-@redisfunction "command_info" Array command commands...
-@redisfunction "config_get" Array parameter
-@redisfunction "config_resetstat" Bool
-@redisfunction "config_rewrite" Bool
-@redisfunction "config_set" Bool parameter value
-@redisfunction "dbsize" Integer
-@redisfunction "debug_object" AbstractString key
-@redisfunction "debug_segfault" Any
-@redisfunction "flushall" AbstractString
-@redisfunction "flushdb" AbstractString Integer
-@redisfunction "info" AbstractString
-@redisfunction "info" AbstractString section
-@redisfunction "lastsave" Integer
-@redisfunction "role" Array
-@redisfunction "save" Bool
-@redisfunction "shutdown" AbstractString
-@redisfunction "shutdown" AbstractString option
-@redisfunction "slaveof" AbstractString host port
-@redisfunction "_time" Array{AbstractString, 1}
-
-# Sentinel commands
-@sentinelfunction "master" Dict{AbstractString, AbstractString} mastername
-@sentinelfunction "reset" Integer pattern
-@sentinelfunction "failover" Any mastername
-@sentinelfunction "monitor" Bool name ip port quorum
-@sentinelfunction "remove" Bool name
-@sentinelfunction "set" Bool name option value
-
-function sentinel_masters(conn::SentinelConnection)
-    response = execute_command(conn, flatten_command("sentinel", "masters"))
-    [convert_response(Dict, master) for master in response]
-end
-
-function sentinel_slaves(conn::SentinelConnection, mastername)
-    response = execute_command(conn, flatten_command("sentinel", "slaves", mastername))
-    [convert_response(Dict, slave) for slave in response]
-end
-
-function sentinel_getmasteraddrbyname(conn::SentinelConnection, mastername)
-    execute_command(conn, flatten_command("sentinel", "get-master-addr-by-name", mastername))
-end
-
-# Custom commands (PubSub/Transaction)
-@redisfunction "publish" Integer channel message
-
-function _subscribe(conn::SubscriptionConnection, channels::Array)
-    execute_command_without_reply(conn, pushfirst!(channels, "subscribe"))
-end
-
-@enum CallbackType  CallbackMsgStruct = 1 CallbackMsgData = 2
-@enum SubscriptionType SubscriptionPlain = 1 SubscriptionPattern = 2
-
-function _register_callback(
-    conn::SubscriptionConnection,
-    channel::AbstractString,
-    subscription_type::SubscriptionType,
-    callback::Function,
-    callback_type::CallbackType,
-)
-    callbacks = subscription_type == SubscriptionPlain ? conn.callbacks :
-        subscription_type == SubscriptionPattern ? conn.pcallbacks :
-        error("Invalid callback type")
-
-    if callback_type == CallbackMsgStruct
-        callbacks[channel] = callback
-    elseif callback_type == CallbackMsgData
-        callbacks[channel] = (msg_struct)->callback(msg_struct.message)
+    if ex > 0
+        command *= "\$2\r\nEX\r\n\$$(sizeof(string(ex)))\r\n$(string(ex))\r\n"
     end
-end
-
-function subscribe(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
-    _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgStruct)
-    _subscribe(conn, [channel])
-end
-
-function subscribe(conn::SubscriptionConnection, subs::Dict)
-    for (channel, callback) in subs
-        _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgStruct)
+    if px > 0
+        command *= "\$2\r\nPX\r\n\$$(sizeof(string(px)))\r\n$(string(px))\r\n"
     end
-    _subscribe(conn, collect(keys(subs)))
+    return Command(command)
 end
 
-function subscribe_data(conn::SubscriptionConnection, channel::AbstractString, callback::Function)
-    _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgData)
-    _subscribe(conn, [channel])
-end
-
-function subscribe_data(conn::SubscriptionConnection, subs::Dict)
-    for (channel, callback) in subs
-        _register_callback(conn, channel, SubscriptionPlain, callback, CallbackMsgData)
+function mset(pairs::Pair{String, String}...)
+    n_args = 1 + 2 * length(pairs)
+    command = "*$n_args\r\n\$4\r\nMSET\r\n"
+    for (key, value) in pairs
+        command *= "\$$(length(key))\r\n$key\r\n"
+        command *= "\$$(length(value))\r\n$value\r\n"
     end
-    _subscribe(conn, collect(keys(subs)))
+    return Command(command)
 end
 
-# REF: https://github.com/stejin/Redis.jl/commit/eace3a1ace7b464ba1e5ea074b27e6e8f652820e
-function unsubscribe(conn::SubscriptionConnection, channels...)
-    for channel in channels
-        delete!(conn.callbacks, channel)
+function append(key::AbstractString, value::AbstractString)
+    command = "*3\r\n\$6\r\nAPPEND\r\n\$$(length(key))\r\n$key\r\n\$$(sizeof(value))\r\n$value\r\n"
+    return Command(command)
+end
+
+function incrby(key::AbstractString, increment::Int)
+    incr = string(increment)
+    command = "*3\r\n\$6\r\nINCRBY\r\n\$$(length(key))\r\n$key\r\n\$$(length(incr))\r\n$incr\r\n"
+    return Command(command)
+end
+
+function get(key::AbstractString)
+    command = "*2\r\n\$3\r\nGET\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function mget(keys::AbstractString...)
+    narg = 1 + length(keys)
+    command = "*$narg\r\n\$4\r\nMGET\r\n"
+    for key in keys
+        command *= "\$$(length(key))\r\n$key\r\n"
     end
-    for channel in channels
-        execute_command_without_reply(conn, pushfirst!([channel], "unsubscribe"))
+    return Command(command)
+end
+
+function del(key::AbstractString)
+    command = "*2\r\n\$3\r\nDEL\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function scan(cursor::AbstractString="0"; match::AbstractString="")
+    cnt = 2 + (match !== "" ? 2 : 0)
+    command = "*$cnt\r\n\$4\r\nSCAN\r\n\$$(length(cursor))\r\n$cursor\r\n"
+    if !isempty(match)
+        command *= "\$5\r\nMATCH\r\n\$$(length(match))\r\n$match\r\n"
     end
-end
-# function unsubscribe(conn::SubscriptionConnection, channels...)
-#     for channel in channels
-#         delete!(conn.callbacks, channel)
-#     end
-#     execute_command(conn, pushfirst!(channels, "unsubscribe"))
-# end
-
-function _psubscribe(conn::SubscriptionConnection, patterns::Array)
-    execute_command_without_reply(conn, pushfirst!(patterns, "psubscribe"))
+    return Command(command)
 end
 
-function psubscribe(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
-    _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgStruct)
-    _psubscribe(conn, [pattern])
-end
-
-function psubscribe(conn::SubscriptionConnection, subs::Dict)
-    for (pattern, callback) in subs
-        _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgStruct)
+function zrange(key::AbstractString, min::AbstractString, max::AbstractString, bylex::Bool=false, useLegacyCommand::Bool=true)
+    if useLegacyCommand
+        if bylex
+            command = "*4\r\n\$11\r\nZRANGEBYLEX\r\n\$$(length(key))\r\n$key\r\n\$$(length(min))\r\n$min\r\n\$$(length(max))\r\n$max\r\n"
+        else
+            command = "*4\r\n\$14\r\nZRANGEBYSCORE\r\n\$$(length(key))\r\n$key\r\n\$$(length(min))\r\n$min\r\n\$$(length(max))\r\n$max\r\n"
+        end
+    else
+        if bylex
+            command = "*5\r\n\$6\r\nZRANGE\r\n\$$(length(key))\r\n$key\r\n\$$(length(min))\r\n$min\r\n\$$(length(max))\r\n$max\r\n\$5\r\nBYLEX\r\n"
+        else
+            command = "*4\r\n\$6\r\nZRANGE\r\n\$$(length(key))\r\n$key\r\n\$$(length(min))\r\n$min\r\n\$$(length(max))\r\n$max\r\n"
+        end
     end
-    _psubscribe(conn, collect(keys(subs)))
+    return Command(command)
 end
 
-function psubscribe_data(conn::SubscriptionConnection, pattern::AbstractString, callback::Function)
-    _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgData)
-    _psubscribe(conn, [pattern])
+function zadd(key::AbstractString, score::AbstractString, member::AbstractString)
+    command = "*4\r\n\$4\r\nZADD\r\n\$$(length(key))\r\n$key\r\n\$$(length(score))\r\n$score\r\n\$$(length(member))\r\n$member\r\n"
+    return Command(command)
 end
 
-function psubscribe_data(conn::SubscriptionConnection, subs::Dict)
-    for (pattern, callback) in subs
-        _register_callback(conn, pattern, SubscriptionPattern, callback, CallbackMsgData)
+function zcard(key::AbstractString)
+    command = "*2\r\n\$5\r\nZCARD\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function zrem(key::AbstractString, member::AbstractString)
+    command = "*3\r\n\$4\r\nZREM\r\n\$$(length(key))\r\n$key\r\n\$$(length(member))\r\n$member\r\n"
+    return Command(command)
+end
+
+function zrevrangebyscore(key::AbstractString, max::AbstractString, min::AbstractString; limit_start::Int=0, limit_count::Int=0)
+    narg = 4 + (limit_count > 0 ? 3 : 0)
+    command = "*$narg\r\n\$16\r\nZREVRANGEBYSCORE\r\n\$$(length(key))\r\n$key\r\n\$$(length(max))\r\n$max\r\n\$$(length(min))\r\n$min\r\n"
+    if limit_count > 0
+        command *= "\$5\r\nLIMIT\r\n\$$(length(string(limit_start)))\r\n$limit_start\r\n\$$(length(string(limit_count)))\r\n$limit_count\r\n"
     end
-    _psubscribe(conn, collect(keys(subs)))
+    return Command(command)
 end
 
-function punsubscribe(conn::SubscriptionConnection, patterns...)
-    for pattern in patterns
-        delete!(conn.pcallbacks, pattern)
+function zremrangebyrank(key::AbstractString, start::Int, stop::Int)
+    command = "*4\r\n\$15\r\nZREMRANGEBYRANK\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(start)))\r\n$start\r\n\$$(length(string(stop)))\r\n$stop\r\n"
+    return Command(command)
+end
+
+function zrevrange(key::AbstractString, start::Int, stop::Int; withscores::Bool=false)
+    nargs = 4 + withscores
+    command = "*$nargs\r\n\$9\r\nZREVRANGE\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(start)))\r\n$start\r\n\$$(length(string(stop)))\r\n$stop\r\n"
+    if withscores
+        command *= "\$10\r\nWITHSCORES\r\n"
     end
-    for pattern in patterns
-        execute_command_without_reply(conn, pushfirst!([pattern], "unsubscribe"))
+    return Command(command)
+end
+
+function zscan(key::AbstractString, cursor::AbstractString="0"; match::AbstractString="")
+    command = "*3\r\n\$5\r\nZSCAN\r\n\$$(length(key))\r\n$key\r\n\$$(length(cursor))\r\n$cursor\r\n"
+    if !isempty(match)
+        command *= "\$5\r\nMATCH\r\n\$$(length(match))\r\n$match\r\n"
     end
+    return Command(command)
 end
 
-#Need a specialized version of execute to keep the connection in the transaction state
-function exec(conn::TransactionConnection)
-    response = execute_command(conn, EXEC)
-    multi(conn)
-    response
+function xadd(key::AbstractString, id::AbstractString, field::AbstractString, value::AbstractString)
+    command = "*5\r\n\$4\r\nXADD\r\n\$$(length(key))\r\n$key\r\n\$$(length(id))\r\n$id\r\n\$$(length(field))\r\n$field\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
 end
 
-###############################################################
-# The following Redis commands can be typecast to Julia structs
-###############################################################
-
-function time(c::RedisConnection)
-    t = _time(c)
-    s = parse(Int,t[1])
-    ms = parse(Float64, t[2])
-    s += (ms / 1e6)
-    return unix2datetime(s)
+function xadd(key::AbstractString, id::AbstractString, field::AbstractString, value::AbstractString, maxlen::Int)
+    command = "*7\r\n\$4\r\nXADD\r\n\$$(length(key))\r\n$key\r\n\$6\r\nMAXLEN\r\n\$1\r\n~\r\n\$$(length(string(maxlen)))\r\n$maxlen\r\n\$$(length(id))\r\n$id\r\n\$$(length(field))\r\n$field\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
 end
+
+function xdel(key::AbstractString, id::AbstractString)
+    command = "*3\r\n\$4\r\nXDEL\r\n\$$(length(key))\r\n$key\r\n\$$(length(id))\r\n$id\r\n"
+    return Command(command)
+end
+
+function xrange(key::AbstractString, start::AbstractString, stop::AbstractString)
+    command = "*4\r\n\$6\r\nXRANGE\r\n\$$(length(key))\r\n$key\r\n\$$(length(start))\r\n$start\r\n\$$(length(stop))\r\n$stop\r\n"
+    return Command(command)
+end
+
+function xtrim(key::AbstractString, maxlen::Int, approximate::Bool=false)
+    if approximate
+        command = "*5\r\n\$5\r\nXTRIM\r\n\$$(length(key))\r\n$key\r\n\$6\r\nMAXLEN\r\n\$1\r\n~\r\n\$$(length(string(maxlen)))\r\n$maxlen\r\n"
+    else
+        command = "*4\r\n\$5\r\nXTRIM\r\n\$$(length(key))\r\n$key\r\n\$6\r\nMAXLEN\r\n\$$(length(string(maxlen)))\r\n$maxlen\r\n"
+    end
+    return Command(command)
+end
+
+function sadd(key::AbstractString, member::AbstractString)
+    command = "*3\r\n\$4\r\nSADD\r\n\$$(length(key))\r\n$key\r\n\$$(length(member))\r\n$member\r\n"
+    return Command(command)
+end
+
+function srem(key::AbstractString, member::AbstractString)
+    command = "*3\r\n\$4\r\nSREM\r\n\$$(length(key))\r\n$key\r\n\$$(length(member))\r\n$member\r\n"
+    return Command(command)
+end
+
+function scard(key::AbstractString)
+    command = "*2\r\n\$5\r\nSCARD\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function sscan(key::AbstractString, cursor::AbstractString="0"; match::AbstractString="")
+    command = "*3\r\n\$5\r\nSSCAN\r\n\$$(length(key))\r\n$key\r\n\$$(length(cursor))\r\n$cursor\r\n"
+    if !isempty(match)
+        command *= "\$5\r\nMATCH\r\n\$$(length(match))\r\n$match\r\n"
+    end
+    return Command(command)
+end
+
+function smembers(key::AbstractString)
+    command = "*2\r\n\$8\r\nSMEMBERS\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function multi()
+    command = "*1\r\n\$5\r\nMULTI\r\n"
+    return Command(command)
+end
+
+function exec()
+    command = "*1\r\n\$4\r\nEXEC\r\n"
+    return Command(command)
+end
+
+function discard()
+    command = "*1\r\n\$7\r\nDISCARD\r\n"
+    return Command(command)
+end
+
+function expire(key::AbstractString, seconds::Int)
+    command = "*3\r\n\$6\r\nEXPIRE\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(seconds)))\r\n$seconds\r\n"
+    return Command(command)
+end
+
+function publish(channel::AbstractString, message::AbstractString)
+    command = "*3\r\n\$7\r\nPUBLISH\r\n\$$(length(channel))\r\n$channel\r\n\$$(length(message))\r\n$message\r\n"
+    return Command(command)
+end
+
+function hdel(key::AbstractString, field::AbstractString)
+    command = "*3\r\n\$4\r\nHDEL\r\n\$$(length(key))\r\n$key\r\n\$$(length(field))\r\n$field\r\n"
+    return Command(command)
+end
+
+function hget(key::AbstractString, field::AbstractString)
+    command = "*3\r\n\$4\r\nHGET\r\n\$$(length(key))\r\n$key\r\n\$$(length(field))\r\n$field\r\n"
+    return Command(command)
+end
+
+function hlen(key::AbstractString)
+    command = "*2\r\n\$4\r\nHLEN\r\n\$$(length(key))\r\n$key\r\n"
+    return Command(command)
+end
+
+function hset(key::AbstractString, field::AbstractString, value::AbstractString)
+    command = "*4\r\n\$4\r\nHSET\r\n\$$(length(key))\r\n$key\r\n\$$(length(field))\r\n$field\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
+end
+
+function hscan(key::AbstractString, cursor::Int64; match::Union{Nothing, AbstractString}=nothing)
+    command = "*3\r\n\$5\r\nHSCAN\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(cursor)))\r\n$cursor\r\n"
+    if match !== nothing
+        command *= "\$5\r\nMATCH\r\n\$$(length(match))\r\n$match\r\n"
+    end
+    return Command(command)
+end
+
+function rpush(key::AbstractString, value::AbstractString)
+    command = "*3\r\n\$5\r\nRPUSH\r\n\$$(length(key))\r\n$key\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
+end
+
+function lindex(key::AbstractString, index::Int64)
+    command = "*3\r\n\$6\r\nLINDEX\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(index)))\r\n$index\r\n"
+    return Command(command)
+end
+
+function lpush(key::AbstractString, value::AbstractString)
+    command = "*3\r\n\$5\r\nLPUSH\r\n\$$(length(key))\r\n$key\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
+end
+
+function ltrim(key::AbstractString, start::Int64, stop::Int64)
+    command = "*4\r\n\$5\r\nLTRIM\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(start)))\r\n$start\r\n\$$(length(string(stop)))\r\n$stop\r\n"
+    return Command(command)
+end
+
+function lrange(key::AbstractString, start::Int64, stop::Int64)
+    command = "*4\r\n\$6\r\nLRANGE\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(start)))\r\n$start\r\n\$$(length(string(stop)))\r\n$stop\r\n"
+    return Command(command)
+end
+
+function lrem(key::AbstractString, count::Int64, value::AbstractString)
+    command = "*4\r\n\$4\r\nLREM\r\n\$$(length(key))\r\n$key\r\n\$$(length(string(count)))\r\n$count\r\n\$$(length(value))\r\n$value\r\n"
+    return Command(command)
+end
+
+function geoadd(key::AbstractString, longitude::AbstractString, latitude::AbstractString, member::AbstractString)
+    command = "*5\r\n\$6\r\nGEOADD\r\n\$$(length(key))\r\n$key\r\n\$$(length(longitude))\r\n$longitude\r\n\$$(length(latitude))\r\n$latitude\r\n\$$(length(member))\r\n$member\r\n"
+    return Command(command)
+end
+
+function geodist(key::AbstractString, member1::AbstractString, member2::AbstractString, unit::AbstractString="m")
+    command = "*5\r\n\$7\r\nGEODIST\r\n\$$(length(key))\r\n$key\r\n\$$(length(member1))\r\n$member1\r\n\$$(length(member2))\r\n$member2\r\n\$$(length(unit))\r\n$unit\r\n"
+    return Command(command)
+end
+
+function geohash(key::AbstractString, members::AbstractString...)
+    n_args = 2 + length(members)
+    command = "*$n_args\r\n\$7\r\nGEOHASH\r\n\$$(length(key))\r\n$key\r\n"
+    for member in members
+        command *= "\$$(length(member))\r\n$member\r\n"
+    end
+    return Command(command)
+end
+
+function geopos(key::AbstractString, members::AbstractString...)
+    n_args = 2 + length(members)
+    command = "*$n_args\r\n\$6\r\nGEOPOS\r\n\$$(length(key))\r\n$key\r\n"
+    for member in members
+        command *= "\$$(length(member))\r\n$member\r\n"
+    end
+    return Command(command)
+end
+
+function geosearch(key::AbstractString, longitude::AbstractString, latitude::AbstractString, radius::AbstractString, unit::AbstractString)
+    command = "*8\r\n\$9\r\nGEOSEARCH\r\n\$$(length(key))\r\n$key\r\n\$10\r\nFROMLONLAT\r\n\$$(length(longitude))\r\n$longitude\r\n\$$(length(latitude))\r\n$latitude\r\n\$8\r\nBYRADIUS\r\n\$$(length(radius))\r\n$radius\r\n\$$(length(unit))\r\n$unit\r\n"
+    return Command(command)
+end
+
+function georadius(key::AbstractString, longitude::AbstractString, latitude::AbstractString, radius::AbstractString, unit::AbstractString; asc::Bool=true, withcoord::Bool=false, withdist::Bool=false, withhash::Bool=false, count::Union{Nothing, Int}=nothing, store::Union{Nothing, String}=nothing, storedist::Union{Nothing, String}=nothing)
+    n_args = 7
+    if withcoord
+        n_args += 1
+    end
+    if withdist
+        n_args += 1
+    end
+    if withhash
+        n_args += 1
+    end
+    if count !== nothing
+        n_args += 2
+    end
+    if store !== nothing
+        n_args += 2
+    end
+    if storedist !== nothing
+        n_args += 2
+    end
+    command = "*$n_args\r\n\$9\r\nGEORADIUS\r\n\$$(length(key))\r\n$key\r\n\$$(length(longitude))\r\n$longitude\r\n\$$(length(latitude))\r\n$latitude\r\n\$$(length(radius))\r\n$radius\r\n\$$(length(unit))\r\n$unit\r\n"
+    if asc
+        command *= "\$3\r\nASC\r\n"
+    else
+        command *= "\$4\r\nDESC\r\n"
+    end
+    if withcoord
+        command *= "\$9\r\nWITHCOORD\r\n"
+    end
+    if withdist
+        command *= "\$8\r\nWITHDIST\r\n"
+    end
+    if withhash
+        command *= "\$8\r\nWITHHASH\r\n"
+    end
+    if count !== nothing
+        command *= "\$5\r\nCOUNT\r\n\$$(length(string(count)))\r\n$count\r\n"
+    end
+    if store !== nothing
+        command *= "\$5\r\nSTORE\r\n\$$(length(store))\r\n$store\r\n"
+    end
+    if storedist !== nothing
+        command *= "\$9\r\nSTOREDIST\r\n\$$(length(storedist))\r\n$storedist\r\n"
+    end
+    return Command(command)
+end
+
+end # module Commands

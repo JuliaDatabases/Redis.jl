@@ -3,22 +3,18 @@ uuid = "0cf705f9-a9e2-50d1-a699-2b372a39b750"
 version = "3.0.1"
 
 [deps]
-DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
-Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
-MbedTLS = "739be429-bea8-5141-9913-cc70e7f3736d"
+AwsIO = "4047365c-aa37-44ec-b1fa-4c0d5495ccf1"
+Base64 = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Parsers = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
+StringViews = "354b36f9-a18e-4713-926e-db85100087ba"
 
 [compat]
 julia = "1.6"
-Dates = "1.6"
-DataStructures = "^0.18"
-MbedTLS = "0.6.8, 0.7, 1"
-Sockets = "1.6"
 
 [extras]
-Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Harbor = "af79dbb9-1a80-47ad-8928-192a4af69376"
 
 [targets]
-test = ["Dates", "Test", "Random"]
+test = ["Harbor", "Test"]

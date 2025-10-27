@@ -3,12 +3,14 @@
 const REDIS_PERSISTENT_KEY =  -1
 const REDIS_EXPIRED_KEY =  -2
 
+const TAG = "{Redis_Test_$(randstring(6))}"
+
 # some random key names
-testkey = "Redis_Test_"*randstring()
-testkey2 = "Redis_Test_"*randstring()
-testkey3 = "Redis_Test_"*randstring()
-testkey4 = "Redis_Test_"*randstring()
-testhash = "Redis_Test_"*randstring()
+testkey = TAG * randstring()
+testkey2 = TAG * randstring()
+testkey3 = TAG * randstring()
+testkey4 = TAG * randstring()
+testhash = TAG * randstring()
 
 # some random strings
 s1 = randstring(); s2 = randstring(); s3 = randstring()
@@ -16,6 +18,8 @@ s4 = randstring(); s5 = randstring(); s6 = randstring()
 s7 = randstring(); s8 = randstring(); s9 = randstring()
 
 function redis_tests(conn = RedisConnection())
+    is_cluster = conn isa RedisClusterConnection
+
     flushall(conn)
 
     @testset "Strings" begin
@@ -32,7 +36,8 @@ function redis_tests(conn = RedisConnection())
         set(conn, testkey2, s2)
         set(conn, testkey3, s3)
         # RANDOMKEY can return 'NIL', so it returns Union{Nothing, T}.  KEYS * always returns empty Set when Redis is empty
-        @test randomkey(conn) in keys(conn, "*")
+        key = randomkey(conn)
+        @test isnothing(key) || (key in keys(conn, "$(TAG)*"))
         @test getrange(conn, testkey, 0, 3) == s1[1:4]
 
         @test set(conn, testkey, 2)
@@ -105,6 +110,7 @@ function redis_tests(conn = RedisConnection())
         =#
     end
 
+    if !is_cluster
     @testset "Migrate" begin
         # TODO: test of `migrate` requires 2 server instances in Travis
         set(conn, testkey, s1)
@@ -114,6 +120,9 @@ function redis_tests(conn = RedisConnection())
         @test get(conn, testkey) == s1
         del(conn, testkey)
         Redis.select(conn, 0)
+    end
+    else
+        @info "Skipping 'Migrate' testset for RedisClusterConnection (unsupported)."
     end
 
     @testset "Expiry" begin
@@ -343,11 +352,11 @@ function redis_tests(conn = RedisConnection())
 
     @testset "Scripting" begin
         script = "return {KEYS[1], KEYS[2], ARGV[1], ARGV[2]}"
-        keys = ["key1", "key2"]
+        keys = [testkey, testkey2]
         args = ["first", "second"]
         resp = evalscript(conn, script, 2, keys, args)
         @test resp == vcat(keys, args)
-        del(conn, "key1")
+        del(conn, testkey, testkey2)
 
         script = "return redis.call('set', KEYS[1], 'bar')"
         ky = "foo"
@@ -381,6 +390,7 @@ function redis_tests(conn = RedisConnection())
     #@test evalscript(conn, "return {1, 2, 3.3333, 'foo', nil, 'bar'}",  0, []) == [1, 2, 3, "foo"]
     end
 
+    if !is_cluster
     @testset "Transactions" begin
         trans = open_transaction(conn)
         @test set(trans, testkey, "foobar") == "QUEUED"
@@ -392,7 +402,11 @@ function redis_tests(conn = RedisConnection())
         @test exec(trans) == [nothing]
         disconnect(trans)
     end
+    else
+        @info "Skipping 'Transactions' testset for RedisClusterConnection (unsupported)."
+    end
 
+    if !is_cluster
     @testset "Pipelines" begin
         pipe = open_pipeline(conn)
         set(pipe, testkey3, "anything")
@@ -413,6 +427,9 @@ function redis_tests(conn = RedisConnection())
         result = read_pipeline(pipe)
         @test result == []
         disconnect(pipe)
+    end
+    else
+        @info "Skipping 'Pipelines' testset for RedisClusterConnection (unsupported)."
     end
 
     @testset "Pub/Sub" begin

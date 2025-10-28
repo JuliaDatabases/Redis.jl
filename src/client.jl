@@ -1,5 +1,38 @@
 import DataStructures.OrderedSet
 
+const CLUSTER_MULTI_KEY_COMMANDS = Set([
+    # String commands - multi-key operations
+    "mget", "mset", "msetnx",
+
+    # Key commands - require same slot or special handling
+    "del", "rename", "renamenx", "keys", "randomkey",
+
+    # List commands - require same slot
+    "rpoplpush", "brpoplpush",
+
+    # Set commands - multi-key operations
+    "smove", "sdiff", "sinter", "sunion",
+    "sdiffstore", "sinterstore", "sunionstore",
+
+    # HyperLogLog commands - multi-key operations
+    "pfcount", "pfmerge",
+
+    # Sorted Set commands - multi-key operations
+    "zinterstore", "zunionstore",
+
+    # Bit commands - multi-key operations
+    "bitop",
+
+    # Script commands - may involve multiple keys
+    "eval", "evalsha",
+
+    # Server commands - need to broadcast to all nodes
+    "flushall", "flushdb", "_time",
+
+    # Pub/Sub commands - need special handling
+    "publish"
+])
+
 flatten(token) = string(token)
 flatten(token::Vector{UInt8}) = [token]
 flatten(token::String) = token
@@ -171,11 +204,14 @@ end
 macro redisfunction(command::AbstractString, ret_type, args...)
     is_exec = Symbol(command) == :exec
     func_name = esc(Symbol(command))
-    command = lstrip(command,'_')
-    command = split(command, '_')
+    command_str = lstrip(command, '_')
+    command = split(command_str, '_')
+    
+    # Check if command needs special cluster handling (multi-key commands)
+    needs_special_cluster_handling = command_str in CLUSTER_MULTI_KEY_COMMANDS
 
     if length(args) > 0
-        return quote
+        base_functions = quote
             function $(func_name)(conn::RedisConnection, $(args...))
                 response = execute_command(conn, flatten_command($(command...), $(args...)))
                 convert_response($ret_type, response)
@@ -191,6 +227,17 @@ macro redisfunction(command::AbstractString, ret_type, args...)
                 execute_command_without_reply(conn, flatten_command($(command...), $(args...)))
             end
         end
+
+        if !needs_special_cluster_handling
+            push!(base_functions.args, :(
+                function $(func_name)(conn::RedisClusterConnection, $(args...))
+                    response = execute_command(conn, flatten_command($(command...), $(args...)))
+                    convert_response($ret_type, response)
+                end
+            ))
+        end
+        return base_functions
+
     else
         q1 = quote
             function $(func_name)(conn::RedisConnection)
@@ -209,12 +256,24 @@ macro redisfunction(command::AbstractString, ret_type, args...)
                 conn.num_commands += 1
             end
         end
-        # To avoid redefining `function exec(conn::TransactionConnection)`
-        if is_exec
-            return Expr(:block, q1.args[2], q3.args[2])
-        else
-            return Expr(:block, q1.args[2], q2.args[2], q3.args[2])
+
+        exprs = [q1.args[2]]
+        if !needs_special_cluster_handling
+            q1_cluster = quote
+                function $(func_name)(conn::RedisClusterConnection)
+                    response = execute_command(conn, flatten_command($(command...)))
+                    convert_response($ret_type, response)
+                end
+            end
+            push!(exprs, q1_cluster.args[2])
         end
+
+        # To avoid redefining `function exec(conn::TransactionConnection)`
+        if !is_exec
+            push!(exprs, q2.args[2])
+        end
+        push!(exprs, q3.args[2])
+        return Expr(:block, exprs...)
     end
 end
 

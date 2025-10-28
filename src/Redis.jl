@@ -6,7 +6,7 @@ using MbedTLS
 import Base.get, Base.keys, Base.time
 
 export RedisException, ConnectionException, ServerException, ProtocolException, ClientException
-export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection,
+export RedisConnection, SentinelConnection, TransactionConnection, SubscriptionConnection, RedisClusterConnection, 
 disconnect, is_connected, open_transaction, reset_transaction, open_subscription,
 open_pipeline, read_pipeline
 # Key commands
@@ -65,5 +65,6 @@ include("connection.jl")
 include("parser.jl")
 include("client.jl")
 include("commands.jl")
+include("cluster_commands.jl")
 
 end

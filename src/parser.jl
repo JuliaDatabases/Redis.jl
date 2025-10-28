@@ -1,6 +1,9 @@
 """
 Formatting of incoming Redis Replies
 """
+
+include("connection.jl")
+
 function getline(t::Transport.RedisTransport)
     l = chomp(Transport.read_line(t))
     length(l) > 1 || throw(ProtocolException("Invalid response received: $l"))
@@ -98,6 +101,114 @@ end
 function execute_command(conn::RedisConnectionBase, command::Vector)
     execute_command_without_reply(conn, command)
     read_reply(conn)
+end
+
+# execute_command for RedisClusterConnection
+function execute_command(cluster::RedisClusterConnection, command::Vector)
+    # For cluster connections, need to find the corresponding node based on the key in the command
+    # Most Redis commands have the key as the first argument
+    max_redirects = 5
+    redirects = 0
+
+    while redirects < max_redirects
+        try
+            # Try to extract key from command and get corresponding connection
+            local target_conn
+
+            if length(command) >= 2
+                # Most command format: [CMD, KEY, ...]
+                # But some commands have different structure
+                cmd_name = uppercase(string(command[1]))
+
+                # Commands where key is at position 3 instead of 2
+                # BITOP operation destkey key [key ...]
+                key_index = if cmd_name == "BITOP" && length(command) >= 3
+                    3  # destkey position
+                else
+                    2  # default key position
+                end
+
+                key = command[key_index]
+                target_conn = get_connection_for_key(cluster, string(key))
+            else
+                # For commands without keys (like PING), use any connection
+                if !isempty(cluster.node_connections)
+                    target_conn = first(values(cluster.node_connections))
+                else
+                    throw(ConnectionException("No active connections in cluster"))
+                end
+            end
+
+            # Execute command on target connection
+            execute_command_without_reply(target_conn, command)
+            return read_reply(target_conn)
+
+        catch e
+            if isa(e, ServerException)
+                # Handle MOVED redirect
+                if occursin("MOVED", e.message)
+                    redirects += 1
+                    @info "Cluster redirect: $(e.message) (attempt $redirects/$max_redirects)"
+
+                    # Parse MOVED response: "MOVED slot host:port"
+                    parts = split(e.message, " ")
+                    if length(parts) >= 3
+                        slot = parse(UInt16, parts[2])
+                        connect_info_string = parts[3]
+                        connect_info = split(connect_info_string, ":")
+
+                        if length(connect_info) >= 2
+                            host = String(connect_info[1])
+                            port = parse(Int, connect_info[2])
+
+                            # Get or create connection to new node and update slot mapping
+                            new_conn = get_node_connection(cluster, host, port)
+                            cluster.slot_map[slot] = new_conn
+
+                            # Retry command (via while loop)
+                            continue
+                        end
+                    end
+
+                    # If parsing failed, refresh entire slot map
+                    @warn "Failed to parse MOVED response, refreshing entire slot map"
+                    refresh_slot_map!(cluster)
+                    continue
+
+                    # Handle ASK redirect
+                elseif occursin("ASK", e.message)
+                    redirects += 1
+                    @info "Cluster ASK redirect: $(e.message) (attempt $redirects/$max_redirects)"
+
+                    # Parse ASK response: "ASK slot host:port"
+                    parts = split(e.message, " ")
+                    if length(parts) >= 3
+                        connect_info_string = parts[3]
+                        connect_info = split(connect_info_string, ":")
+
+                        if length(connect_info) >= 2
+                            host = String(connect_info[1])
+                            port = parse(Int, connect_info[2])
+
+                            # ASK requires sending ASKING command first, then retry original command
+                            ask_conn = get_node_connection(cluster, host, port)
+                            execute_command(ask_conn, ["ASKING"])
+                            execute_command_without_reply(ask_conn, command)
+                            return read_reply(ask_conn)
+                        end
+                    end
+
+                    @warn "Failed to parse ASK response: $(e.message)"
+                    rethrow(e)
+                end
+            end
+
+            # Rethrow other errors
+            rethrow(e)
+        end
+    end
+
+    throw(ConnectionException("Too many cluster redirects ($max_redirects)"))
 end
 
 baremodule SubscriptionMessageType

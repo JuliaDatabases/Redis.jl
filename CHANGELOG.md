@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+- `zrange`, `zrangebyscore`, `zrevrange`, and `zrevrangebyscore` now return a `Vector{AbstractString}` when `WITHSCORES` is requested, preserving duplicate scores and members that match score strings. This changes the previous `OrderedSet` return type for that option. Scores remain strings; calls without `WITHSCORES` still return an `OrderedSet`.
+
 ## 4.0.0
 
 - **BREAKING**: TLS connections now use [OpenSSL.jl](https://github.com/JuliaWeb/OpenSSL.jl) instead of MbedTLS.jl, which is no longer maintained. The `sslconfig` keyword argument of `RedisConnection`, `SentinelConnection` and `RedisClusterConnection` now takes a `Redis.TLSConfig` (or an `OpenSSL.SSLContext`) instead of a `MbedTLS.SSLConfig`. `TLSConfig(; cacert, clientcert, clientkey, verify)` covers the common cases without touching OpenSSL directly.

@@ -56,6 +56,17 @@ If users are interested, the API could be improved to provide custom functions f
 
 An exception to this option syntax are the functions `zinterstore` and `zunionstore`, which have specific implementations to allow for ease of use due to their greater complexity.
 
+### Sorted-set ranges with scores
+
+`zrange`, `zrangebyscore`, `zrevrange`, and `zrevrangebyscore` return an `OrderedSet{AbstractString}` of members by default. With the `WITHSCORES` option, they return a `Vector{AbstractString}` containing alternating members and scores in server order. Scores remain strings, and repeated scores are preserved. This applies to both single-server and cluster connections.
+
+```julia
+zadd(conn, "scores", (1, "one"), (1, "three"))
+zrange(conn, "scores", 0, -1, :withscores) # ["one", "1", "three", "1"]
+```
+
+Pipeline and transaction results contain the raw Redis replies, including every member and score.
+
 ## Pipelining
 
 Redis.jl supports pipelining through the `PipelineConnection`. Commands are executed in much the same way as standard Redis commands:

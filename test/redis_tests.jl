@@ -302,12 +302,12 @@ function redis_tests(conn = RedisConnection())
 
         zadd(conn, testkey, zip(1:length(vals), vals)...)
         @test zremrangebyrank(conn, testkey, 0, 1) == 2
-        @test zrange(conn, testkey, 0, -1, "WITHSCORES") == OrderedSet(["c", "3", "d", "4", "e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"])
+        @test zrange(conn, testkey, 0, -1, "WITHSCORES") == ["c", "3", "d", "4", "e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"]
         @test zremrangebyscore(conn, testkey, "-inf", "(5") == 2
-        @test zrange(conn, testkey, 0, -1, "WITHSCORES") == OrderedSet(["e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"])
+        @test zrange(conn, testkey, 0, -1, "WITHSCORES") == ["e", "5", "f", "6", "g", "7", "h", "8", "i", "9", "j", "10"]
         @test zrevrange(conn, testkey, 0, -1) == OrderedSet(["j", "i", "h", "g", "f", "e"])
         @test zrevrangebyscore(conn, testkey, "+inf", "-inf") == OrderedSet(["j", "i", "h", "g", "f", "e"])
-        @test zrevrangebyscore(conn, testkey, "+inf", "-inf", "WITHSCORES", "LIMIT", 2, 3) == OrderedSet(["h", "8", "g", "7", "f", "6"])
+        @test zrevrangebyscore(conn, testkey, "+inf", "-inf", "WITHSCORES", "LIMIT", 2, 3) == ["h", "8", "g", "7", "f", "6"]
         @test zrevrangebyscore(conn, testkey, 7, 5) == OrderedSet(["g", "f", "e"])
         @test zrevrangebyscore(conn, testkey, "(6", "(5") == OrderedSet{AbstractString}()
         @test zrevrank(conn, testkey, "e") == 5
@@ -344,6 +344,55 @@ function redis_tests(conn = RedisConnection())
         @test bzpopmin(conn, testkey, 0) == [testkey, "a", "4"]
         @test bzpopmin(conn, testkey, 0.1) == nothing
         del(conn, testkey)
+    end
+
+    @testset "Sorted-set range scores" begin
+        zadd(conn, testkey, (1, "1"), (1, "one"), (1, "three"), (2.5, "two"))
+        forward = ["1", "1", "one", "1", "three", "1", "two", "2.5"]
+        backward = ["two", "2.5", "three", "1", "one", "1", "1", "1"]
+        ranges = [
+            (zrange, 0, -1, forward),
+            (zrangebyscore, "-inf", "+inf", forward),
+            (zrevrange, 0, -1, backward),
+            (zrevrangebyscore, "+inf", "-inf", backward),
+        ]
+        bytes_option = Vector{UInt8}(codeunits("WITHSCORES"))
+        for (command, lower, upper, expected) in ranges
+            plain = command(conn, testkey, lower, upper)
+            @test plain isa OrderedSet{AbstractString}
+            @test collect(plain) == expected[1:2:end]
+            for option in ("WITHSCORES", :withscores, "WiThScOrEs", ["withscores"], bytes_option)
+                scored = command(conn, testkey, lower, upper, option)
+                @test scored isa Vector{AbstractString}
+                @test scored == expected
+            end
+        end
+        @test bytes_option == Vector{UInt8}(codeunits("WITHSCORES"))
+        @test zrangebyscore(conn, testkey, "-inf", "+inf", :limit, 1, 2, :withscores) == ["one", "1", "three", "1"]
+        @test zrevrangebyscore(conn, testkey, "+inf", "-inf", :withscores, :limit, 1, 2) == ["three", "1", "one", "1"]
+        @test zrangebyscore(conn, testkey, "-inf", "+inf", :limit, (1, "2"), :withscores) == ["one", "1", "three", "1"]
+        @test collect(zrevrangebyscore(conn, testkey, "+inf", "-inf", :limit, (1, "2"))) == ["three", "one"]
+
+        if !is_cluster
+            pipe = open_pipeline(conn)
+            trans = open_transaction(conn)
+            for (command, lower, upper, _) in ranges
+                command(pipe, testkey, lower, upper, :withscores)
+                @test command(trans, testkey, lower, upper, :withscores) == "QUEUED"
+            end
+            @test read_pipeline(pipe) == [forward, forward, backward, backward]
+            @test exec(trans) == [forward, forward, backward, backward]
+            disconnect(pipe)
+            disconnect(trans)
+        end
+
+        del(conn, testkey)
+        for (command, lower, upper, _) in ranges
+            @test command(conn, testkey, lower, upper) isa OrderedSet{AbstractString}
+            empty_scores = command(conn, testkey, lower, upper, :withscores)
+            @test empty_scores isa Vector{AbstractString}
+            @test isempty(empty_scores)
+        end
     end
 
     @testset "Scan" begin
